@@ -8,7 +8,8 @@ export const useData = () => useContext(DataContext);
 const VENDORS = [
     { id: 1, name: 'Golden Bar & Lounge', type: 'Bar', image: 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=2574&auto=format&fit=crop' },
     { id: 2, name: 'Premium Steakhouse', type: 'Restaurant', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2670&auto=format&fit=crop' },
-    { id: 3, name: 'Artisan Coffee Co.', type: 'Café', image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=2678&auto=format&fit=crop' },
+    { id: 3, name: 'Artisan Coffee Co.', type: 'Coffee', image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=2678&auto=format&fit=crop' },
+    { id: 4, name: 'Elite Events', type: 'Social Event', image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2670&auto=format&fit=crop' },
 ];
 
 // Services by Vendor
@@ -27,6 +28,12 @@ const INITIAL_SERVICES = [
     { id: 7, vendorId: 3, title: 'Specialty Pour Over', image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=2670&auto=format&fit=crop', avgTime: 8, totalStock: 100, sold: 60 },
     { id: 8, vendorId: 3, title: 'Latte Art Workshop', image: 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=2574&auto=format&fit=crop', avgTime: 25, totalStock: 15, sold: 7 },
     { id: 9, vendorId: 3, title: 'Cold Brew Flight', image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=2669&auto=format&fit=crop', avgTime: 5, totalStock: 80, sold: 40 },
+
+    // Elite Events - Social Events
+    { id: 10, vendorId: 4, title: 'VIP Gala Night', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2670&auto=format&fit=crop', avgTime: 180, totalStock: 200, sold: 75 },
+    { id: 11, vendorId: 4, title: 'Exclusive Networking Party', image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2669&auto=format&fit=crop', avgTime: 120, totalStock: 150, sold: 45 },
+    { id: 12, vendorId: 4, title: 'Private Concert Access', image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=2670&auto=format&fit=crop', avgTime: 240, totalStock: 500, sold: 320 },
+    { id: 13, vendorId: 4, title: 'Art Exhibition Opening', image: 'https://images.unsplash.com/photo-1531243269054-5ebf6f34081e?q=80&w=2670&auto=format&fit=crop', avgTime: 90, totalStock: 100, sold: 28 },
 ];
 
 export const DataProvider = ({ children }) => {

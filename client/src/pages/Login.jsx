@@ -7,7 +7,7 @@ import { Wallet, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const { login, connectWallet, loading, authenticated, user, ready } = useAuth();
+    const { login, connectWallet, loading, authenticated, user, ready, needsRegistration } = useAuth();
     const navigate = useNavigate();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -15,9 +15,15 @@ const Login = () => {
 
     useEffect(() => {
         if (ready && authenticated && user) {
-            navigate('/client');
+            if (needsRegistration) {
+                navigate('/register');
+            } else if (user.role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/client');
+            }
         }
-    }, [ready, authenticated, user, navigate]);
+    }, [ready, authenticated, user, navigate, needsRegistration]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -27,7 +33,7 @@ const Login = () => {
             if (username === 'admin') navigate('/admin');
             else navigate('/client');
         } else {
-            setError('Credenciales inválidas');
+            setError('Invalid credentials');
         }
     };
 
@@ -96,7 +102,7 @@ const Login = () => {
                             <label className="text-[10px] text-[#FFD700] uppercase tracking-[0.2em] mb-2 block font-bold">Passcode</label>
                             <input
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder="********"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="input-premium placeholder:text-gray-600 placeholder:text-sm"

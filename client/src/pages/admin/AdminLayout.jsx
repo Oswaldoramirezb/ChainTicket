@@ -1,6 +1,6 @@
 import { useNavigate, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, LayoutDashboard, ListPlus, Shield } from 'lucide-react';
+import { LogOut, LayoutDashboard, ListPlus, Shield, User, Wallet } from 'lucide-react';
 import AnimatedBackground from '../../components/AnimatedBackground';
 
 const AdminLayout = () => {
@@ -16,10 +16,9 @@ const AdminLayout = () => {
     const isActive = (path) => location.pathname === path;
 
     return (
-        <div className="min-h-screen relative text-white flex flex-col">
+        <div className="min-h-screen relative text-white flex flex-col pb-20 md:pb-0">
             <AnimatedBackground />
 
-            {/* Premium Navbar */}
             <div className="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-white/5">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded border border-yellow-500/30 flex items-center justify-center bg-black/50">
@@ -41,7 +40,6 @@ const AdminLayout = () => {
             </div>
 
             <div className="flex flex-1">
-                {/* Sidebar */}
                 <aside className="w-64 hidden md:flex flex-col border-r border-white/5 bg-black/20 pt-8">
                     <nav className="space-y-2 px-4">
                         <Link
@@ -58,13 +56,45 @@ const AdminLayout = () => {
                             <ListPlus className={`w-5 h-5 ${isActive('/admin/services') ? 'text-yellow-500' : 'group-hover:text-yellow-500 transition-colors'}`} />
                             <span className="text-sm tracking-wide font-medium">Services</span>
                         </Link>
+                        <Link
+                            to="/admin/profile"
+                            className={`flex items-center gap-3 px-4 py-4 rounded transition-all group ${isActive('/admin/profile') ? 'bg-yellow-500/10 border-l-2 border-yellow-500 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                        >
+                            <User className={`w-5 h-5 ${isActive('/admin/profile') ? 'text-yellow-500' : 'group-hover:text-yellow-500 transition-colors'}`} />
+                            <span className="text-sm tracking-wide font-medium">My Profile</span>
+                        </Link>
                     </nav>
                 </aside>
 
-                {/* Content */}
                 <main className="flex-1 p-6 md:p-10 pt-8 overflow-y-auto">
                     <Outlet />
                 </main>
+            </div>
+
+            <div className="fixed bottom-0 left-0 w-full h-20 bg-black border-t border-[#222] flex justify-around items-center z-50 md:hidden">
+                <Link
+                    to="/admin"
+                    className={`flex flex-col items-center gap-1 transition-all ${isActive('/admin') ? 'text-[#FFD700]' : 'text-[#444]'}`}
+                >
+                    <LayoutDashboard className="w-5 h-5" />
+                    <span className="text-[9px] uppercase font-bold tracking-[0.2em] mt-2">Overview</span>
+                </Link>
+                <div className="w-[1px] h-8 bg-[#222]" />
+                <Link
+                    to="/admin/services"
+                    className={`flex flex-col items-center gap-1 transition-all ${isActive('/admin/services') ? 'text-[#FFD700]' : 'text-[#444]'}`}
+                >
+                    <ListPlus className="w-5 h-5" />
+                    <span className="text-[9px] uppercase font-bold tracking-[0.2em] mt-2">Services</span>
+                </Link>
+                <div className="w-[1px] h-8 bg-[#222]" />
+                <Link
+                    to="/admin/profile"
+                    className={`flex flex-col items-center gap-1 transition-all ${isActive('/admin/profile') ? 'text-[#FFD700]' : 'text-[#444]'}`}
+                >
+                    <User className="w-5 h-5" />
+                    <span className="text-[9px] uppercase font-bold tracking-[0.2em] mt-2">Profile</span>
+                </Link>
             </div>
         </div>
     );
