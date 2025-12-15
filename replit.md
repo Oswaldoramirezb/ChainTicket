@@ -10,8 +10,12 @@ Chain Ticket is a tokenized ticketing platform built on Movement blockchain for 
 ├── client/              # React + Vite frontend
 │   ├── src/
 │   │   ├── components/  # Reusable UI components
-│   │   ├── context/     # React contexts (AuthContext)
-│   │   ├── pages/       # Page components (Login, Client, Admin)
+│   │   ├── context/     # React contexts (AuthContext, DataContext)
+│   │   ├── pages/       # Page components
+│   │   │   ├── admin/   # Admin pages (Dashboard, Services, Profile)
+│   │   │   ├── client/  # Client pages (VendorSelection, Menu, Cart, Orders, Profile)
+│   │   │   ├── Login.jsx
+│   │   │   └── Registration.jsx
 │   │   └── assets/      # Images and static assets
 │   ├── vite.config.js
 │   └── package.json
@@ -53,17 +57,45 @@ The frontend runs on port 5000, backend on port 3001.
 3. **QR Validation** - Scan tickets at entry points
 4. **Analytics Dashboard** - Track sales and revenue
 
-## Authentication
+## Vendor Categories
+
+- **Bar** - Golden Bar & Lounge
+- **Restaurant** - Premium Steakhouse
+- **Coffee** - Artisan Coffee Co.
+- **Social Event** - Elite Events (VIP Gala, Networking Parties, Concerts, Art Exhibitions)
+
+## Authentication & Registration
 
 - **Privy** integration for wallet/social authentication
 - Traditional username/password login also available
 - Test credentials: admin/123 or user/123
+- **New wallet registration flow**: When a new wallet connects, users select whether to register as User or Vendor, then fill out profile information
+
+## User Profiles
+
+- Both clients and admins have "My Profile" pages
+- Users can edit: Full Name, Email, Phone, Location
+- Vendors can also set: Business Name
+- Profile data is stored in localStorage and persists across sessions
+
+## Navigation
+
+### Client Navigation (Bottom Nav Mobile)
+- Catalog - Browse establishments
+- Wallet - View orders/tickets
+- Profile - Manage account
+
+### Admin Navigation (Sidebar + Bottom Nav Mobile)
+- Overview - Manage orders/queue
+- Services - Manage tickets/services
+- My Profile - Account settings
 
 ## Important Notes
 
 - Privy version must stay at 1.88.4 to avoid React hook conflicts
 - React must stay at 18.2.0 for compatibility with Privy
 - Vite config includes aliases to prevent duplicate React instances
+- Hook errors in console are related to Privy's iframe integration in Replit environment
 
 ## Privy App ID
 clpispdty00ycl80fpueukbhl
