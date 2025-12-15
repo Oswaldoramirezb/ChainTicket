@@ -40,5 +40,6 @@ localPort = 5001
 externalPort = 3000
 
 [deployment]
-deploymentTarget = "static"
+deploymentTarget = "cloudrun"
 publicDir = "/login"
+run = ["sh", "-c", "npm run build"]
