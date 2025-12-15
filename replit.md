@@ -64,6 +64,23 @@ The frontend runs on port 5000, backend on port 3001.
 - **Coffee** - Artisan Coffee Co.
 - **Social Event** - Elite Events (VIP Gala, Networking Parties, Concerts, Art Exhibitions)
 
+## Services/Tickets Management (Admin)
+
+Each service/ticket includes:
+- **Title** - Name of the service/event
+- **Image** - Visual representation
+- **Duration** - How long the service/event lasts
+- **Total Tickets** - Maximum capacity
+- **Sold Count** - Tickets already sold
+- **isActive** - Enable/disable the service
+- **Schedule** - Operating hours and days
+
+Admin Controls:
+- **Add Service** - Create new tickets/services with schedule
+- **Edit** - Modify title, duration, stock, schedule, and operating days
+- **Activate/Deactivate** - Toggle service availability (green power button)
+- **Delete** - Remove service with confirmation dialog
+
 ## Authentication & Registration
 
 - **Privy** integration for wallet/social authentication
@@ -87,7 +104,7 @@ The frontend runs on port 5000, backend on port 3001.
 
 ### Admin Navigation (Sidebar + Bottom Nav Mobile)
 - Overview - Manage orders/queue
-- Services - Manage tickets/services
+- Services - Manage tickets/services with schedules
 - My Profile - Account settings
 
 ## Important Notes
