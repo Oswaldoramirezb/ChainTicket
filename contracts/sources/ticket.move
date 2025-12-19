@@ -1,16 +1,21 @@
 module ticketchain::ticket {
     use std::string::{Self, String};
     use std::signer;
+    use std::vector;
     use aptos_framework::object::{Self, Object};
     use aptos_framework::event;
 
-    /// Error codes
     const E_NOT_AUTHORIZED: u64 = 1;
     const E_TICKET_ALREADY_USED: u64 = 2;
     const E_EVENT_SOLD_OUT: u64 = 3;
     const E_INVALID_TICKET: u64 = 4;
+    const E_EVENT_NOT_ACTIVE: u64 = 5;
+    const E_TRANSFER_NOT_ALLOWED: u64 = 6;
+    const E_RESALE_NOT_ALLOWED: u64 = 7;
+    const E_NOT_TICKET_OWNER: u64 = 8;
+    const E_EVENT_CANCELLED: u64 = 9;
+    const E_TICKET_NOT_PERMANENT: u64 = 10;
 
-    /// Represents an event created by a business
     struct Event has key {
         name: String,
         description: String,
@@ -19,23 +24,31 @@ module ticketchain::ticket {
         tickets_sold: u64,
         ticket_price: u64,
         is_active: bool,
+        transferable: bool,
+        resalable: bool,
+        permanent: bool,
+        refundable: bool,
     }
 
-    /// Represents a ticket NFT
     struct Ticket has key {
         event_id: address,
         ticket_number: u64,
         owner: address,
-        permanent: bool
+        is_used: bool,
+        permanent: bool,
+        qr_hash: vector<u8>,
     }
 
-    /// Events for tracking
     #[event]
     struct EventCreated has drop, store {
         event_address: address,
         business: address,
         name: String,
         total_tickets: u64,
+        transferable: bool,
+        resalable: bool,
+        permanent: bool,
+        refundable: bool,
     }
 
     #[event]
@@ -53,13 +66,39 @@ module ticketchain::ticket {
         validated_at: u64,
     }
 
-    /// Create a new event
+    #[event]
+    struct TicketTransferred has drop, store {
+        ticket_address: address,
+        from: address,
+        to: address,
+        event_address: address,
+    }
+
+    #[event]
+    struct TicketUsed has drop, store {
+        ticket_address: address,
+        event_address: address,
+        user: address,
+        was_burned: bool,
+    }
+
+    #[event]
+    struct EventCancelled has drop, store {
+        event_address: address,
+        business: address,
+        tickets_sold: u64,
+    }
+
     public entry fun create_event(
         business: &signer,
         name: String,
         description: String,
         total_tickets: u64,
         ticket_price: u64,
+        transferable: bool,
+        resalable: bool,
+        permanent: bool,
+        refundable: bool,
     ) {
         let business_addr = signer::address_of(business);
         
@@ -67,7 +106,6 @@ module ticketchain::ticket {
         let object_signer = object::generate_signer(&constructor_ref);
         let event_address = object::address_from_constructor_ref(&constructor_ref);
 
-        // Copy the name for the event emission before moving it to storage
         let name_copy = string::utf8(*string::bytes(&name));
 
         move_to(&object_signer, Event {
@@ -78,6 +116,10 @@ module ticketchain::ticket {
             tickets_sold: 0,
             ticket_price,
             is_active: true,
+            transferable,
+            resalable,
+            permanent,
+            refundable,
         });
 
         event::emit(EventCreated {
@@ -85,23 +127,28 @@ module ticketchain::ticket {
             business: business_addr,
             name: name_copy,
             total_tickets,
+            transferable,
+            resalable,
+            permanent,
+            refundable,
         });
     }
 
-    /// Purchase a ticket for an event
     public entry fun purchase_ticket(
         buyer: &signer,
         event_object: Object<Event>,
+        qr_hash: vector<u8>,
     ) acquires Event {
         let buyer_addr = signer::address_of(buyer);
         let event_addr = object::object_address(&event_object);
         let event_data = borrow_global_mut<Event>(event_addr);
 
-        assert!(event_data.is_active, E_INVALID_TICKET);
+        assert!(event_data.is_active, E_EVENT_NOT_ACTIVE);
         assert!(event_data.tickets_sold < event_data.total_tickets, E_EVENT_SOLD_OUT);
 
         event_data.tickets_sold = event_data.tickets_sold + 1;
         let ticket_number = event_data.tickets_sold;
+        let is_permanent = event_data.permanent;
 
         let constructor_ref = object::create_object(buyer_addr);
         let object_signer = object::generate_signer(&constructor_ref);
@@ -112,6 +159,8 @@ module ticketchain::ticket {
             ticket_number,
             owner: buyer_addr,
             is_used: false,
+            permanent: is_permanent,
+            qr_hash,
         });
 
         event::emit(TicketPurchased {
@@ -122,7 +171,60 @@ module ticketchain::ticket {
         });
     }
 
-    /// Validate a ticket at entry point
+    public entry fun transfer_ticket(
+        sender: &signer,
+        ticket_object: Object<Ticket>,
+        recipient: address,
+    ) acquires Ticket, Event {
+        let sender_addr = signer::address_of(sender);
+        let ticket_addr = object::object_address(&ticket_object);
+        let ticket_data = borrow_global_mut<Ticket>(ticket_addr);
+        
+        assert!(ticket_data.owner == sender_addr, E_NOT_TICKET_OWNER);
+        assert!(!ticket_data.is_used, E_TICKET_ALREADY_USED);
+        
+        let event_data = borrow_global<Event>(ticket_data.event_id);
+        assert!(event_data.is_active, E_EVENT_CANCELLED);
+        assert!(event_data.transferable, E_TRANSFER_NOT_ALLOWED);
+        
+        let event_id = ticket_data.event_id;
+        ticket_data.owner = recipient;
+
+        event::emit(TicketTransferred {
+            ticket_address: ticket_addr,
+            from: sender_addr,
+            to: recipient,
+            event_address: event_id,
+        });
+    }
+
+    public entry fun use_ticket(
+        user: &signer,
+        ticket_object: Object<Ticket>,
+    ) acquires Ticket, Event {
+        let user_addr = signer::address_of(user);
+        let ticket_addr = object::object_address(&ticket_object);
+        let ticket_data = borrow_global_mut<Ticket>(ticket_addr);
+        
+        assert!(ticket_data.owner == user_addr, E_NOT_TICKET_OWNER);
+        assert!(!ticket_data.is_used, E_TICKET_ALREADY_USED);
+        
+        let event_data = borrow_global<Event>(ticket_data.event_id);
+        assert!(event_data.is_active, E_EVENT_CANCELLED);
+        
+        let event_id = ticket_data.event_id;
+        let is_permanent = ticket_data.permanent;
+        
+        ticket_data.is_used = true;
+        
+        event::emit(TicketUsed {
+            ticket_address: ticket_addr,
+            event_address: event_id,
+            user: user_addr,
+            was_burned: !is_permanent,
+        });
+    }
+
     public entry fun validate_ticket(
         validator: &signer,
         ticket_object: Object<Ticket>,
@@ -134,11 +236,12 @@ module ticketchain::ticket {
         
         let event_data = borrow_global<Event>(event_addr);
         assert!(event_data.business_address == validator_addr, E_NOT_AUTHORIZED);
+        assert!(event_data.is_active, E_EVENT_CANCELLED);
 
         let ticket_data = borrow_global_mut<Ticket>(ticket_addr);
         assert!(ticket_data.event_id == event_addr, E_INVALID_TICKET);
         assert!(!ticket_data.is_used, E_TICKET_ALREADY_USED);
-
+        
         ticket_data.is_used = true;
 
         event::emit(TicketValidated {
@@ -148,8 +251,55 @@ module ticketchain::ticket {
         });
     }
 
+    public entry fun cancel_event(
+        business: &signer,
+        event_object: Object<Event>,
+    ) acquires Event {
+        let business_addr = signer::address_of(business);
+        let event_addr = object::object_address(&event_object);
+        let event_data = borrow_global_mut<Event>(event_addr);
+        
+        assert!(event_data.business_address == business_addr, E_NOT_AUTHORIZED);
+        
+        let tickets_sold = event_data.tickets_sold;
+        event_data.is_active = false;
+
+        event::emit(EventCancelled {
+            event_address: event_addr,
+            business: business_addr,
+            tickets_sold,
+        });
+    }
+
+    public entry fun reset_permanent_ticket(
+        owner: &signer,
+        ticket_object: Object<Ticket>,
+    ) acquires Ticket, Event {
+        let owner_addr = signer::address_of(owner);
+        let ticket_addr = object::object_address(&ticket_object);
+        let ticket_data = borrow_global_mut<Ticket>(ticket_addr);
+        
+        assert!(ticket_data.owner == owner_addr, E_NOT_TICKET_OWNER);
+        assert!(ticket_data.permanent, E_TICKET_NOT_PERMANENT);
+        
+        let event_data = borrow_global<Event>(ticket_data.event_id);
+        assert!(event_data.is_active, E_EVENT_CANCELLED);
+        
+        ticket_data.is_used = false;
+    }
+
     #[view]
-    public fun get_event_info(event_object: Object<Event>): (String, u64, u64, u64, bool) acquires Event {
+    public fun get_event_info(event_object: Object<Event>): (
+        String,
+        u64,
+        u64,
+        u64,
+        bool,
+        bool,
+        bool,
+        bool,
+        bool
+    ) acquires Event {
         let event_addr = object::object_address(&event_object);
         let event_data = borrow_global<Event>(event_addr);
         (
@@ -158,13 +308,69 @@ module ticketchain::ticket {
             event_data.tickets_sold,
             event_data.ticket_price,
             event_data.is_active,
+            event_data.transferable,
+            event_data.resalable,
+            event_data.permanent,
+            event_data.refundable,
         )
     }
 
     #[view]
-    public fun is_ticket_valid(ticket_object: Object<Ticket>): bool acquires Ticket {
+    public fun get_ticket_info(ticket_object: Object<Ticket>): (
+        address,
+        u64,
+        address,
+        bool,
+        bool,
+        vector<u8>
+    ) acquires Ticket {
         let ticket_addr = object::object_address(&ticket_object);
         let ticket_data = borrow_global<Ticket>(ticket_addr);
-        !ticket_data.is_used
+        (
+            ticket_data.event_id,
+            ticket_data.ticket_number,
+            ticket_data.owner,
+            ticket_data.is_used,
+            ticket_data.permanent,
+            ticket_data.qr_hash,
+        )
+    }
+
+    #[view]
+    public fun is_ticket_valid(ticket_object: Object<Ticket>): bool acquires Ticket, Event {
+        let ticket_addr = object::object_address(&ticket_object);
+        let ticket_data = borrow_global<Ticket>(ticket_addr);
+        
+        let event_data = borrow_global<Event>(ticket_data.event_id);
+        if (!event_data.is_active) {
+            return false
+        };
+        
+        if (ticket_data.permanent) {
+            true
+        } else {
+            !ticket_data.is_used
+        }
+    }
+
+    #[view]
+    public fun get_event_business(event_object: Object<Event>): address acquires Event {
+        let event_addr = object::object_address(&event_object);
+        let event_data = borrow_global<Event>(event_addr);
+        event_data.business_address
+    }
+
+    #[view]
+    public fun is_event_active(event_object: Object<Event>): bool acquires Event {
+        let event_addr = object::object_address(&event_object);
+        let event_data = borrow_global<Event>(event_addr);
+        event_data.is_active
+    }
+
+    #[view]
+    public fun verify_qr_hash(ticket_object: Object<Ticket>, hash_to_verify: vector<u8>): bool acquires Ticket {
+        let ticket_addr = object::object_address(&ticket_object);
+        let ticket_data = borrow_global<Ticket>(ticket_addr);
+        ticket_data.qr_hash == hash_to_verify
     }
 }
