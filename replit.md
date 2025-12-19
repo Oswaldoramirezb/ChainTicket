@@ -24,6 +24,7 @@ Chain Ticket is a tokenized ticketing platform built on Movement blockchain for 
 │   └── package.json
 ├── contracts/           # Movement Move smart contracts
 │   ├── sources/
+│   │   ├── admin_registry.move
 │   │   └── ticket.move
 │   └── Move.toml
 └── replit.md            # This file
@@ -49,56 +50,90 @@ Chain Ticket is a tokenized ticketing platform built on Movement blockchain for 
 ## Smart Contracts Architecture
 
 ### 1. AdminRegistry (admin_registry.move)
-Manages administrator roles for the platform.
+Manages administrator roles for the platform with support for multiple superadmins.
 
-**Functions:**
-- `initialize(superadmin)` - Creates the registry with initial superadmin
-- `add_admin(caller, registry_address, new_admin)` - Superadmin adds new admins
+**Entry Functions:**
+- `initialize(superadmin)` - Creates the registry with initial superadmin (protected against double init)
+- `add_superadmin(caller, registry_address, new_superadmin)` - Add another superadmin
+- `remove_superadmin(caller, registry_address, superadmin_to_remove)` - Remove a superadmin (can't remove last one)
+- `transfer_superadmin(caller, registry_address, new_superadmin)` - Transfer superadmin role to another address
+- `set_admin_self_service(caller, registry_address, enabled)` - Enable/disable admins adding other admins
+- `add_admin(caller, registry_address, new_admin)` - Add admin (superadmins always can, admins if self-service enabled)
 - `remove_admin(caller, registry_address, admin_to_remove)` - Superadmin removes admins
 
 **View Functions:**
 - `is_admin(registry_address, addr)` - Check if address is admin
 - `is_superadmin(registry_address, addr)` - Check if address is superadmin
+- `get_superadmins(registry_address)` - Get list of all superadmins
 - `get_all_admins(registry_address)` - Get list of all admins
+- `is_admin_self_service_enabled(registry_address)` - Check if admin self-service is enabled
 
 ### 2. Ticket (ticket.move)
-Main contract for events and ticket NFTs.
+Main contract for events and ticket NFTs with payment verification and burn functionality.
 
 **Event Struct Fields:**
 - `name`, `description`, `business_address`
 - `total_tickets`, `tickets_sold`, `ticket_price`
-- `is_active` - Event status
+- `is_active` - Event can accept new tickets
+- `is_cancelled` - Event permanently cancelled
 - `transferable` - Can tickets be transferred between users
 - `resalable` - Can tickets be resold
 - `permanent` - Tickets can be reused (vs single-use)
 - `refundable` - Can tickets be refunded
+- `payment_processor` - Address authorized to mint tickets after payment
 
 **Ticket Struct Fields:**
 - `event_id`, `ticket_number`, `owner`
-- `is_used` - Has the ticket been consumed
+- `is_used` - Has the ticket been used
+- `is_burned` - Ticket has been permanently destroyed (non-permanent only)
 - `permanent` - Copied from event config
 - `qr_hash` - Hash for QR code validation
 
 **Entry Functions:**
-- `create_event(...)` - Business creates event with all configurations
-- `purchase_ticket(buyer, event_object, qr_hash)` - Mint ticket on purchase
+- `create_event(...)` - Business creates event with all configurations including payment_processor
+- `set_payment_processor(business, event_object, processor)` - Change payment processor
+- `mint_ticket_after_payment(processor, event_object, buyer, qr_hash)` - Mint ticket (only by payment_processor or business)
+- `purchase_ticket_free(buyer, event_object, qr_hash)` - Mint free ticket (only if price == 0)
 - `transfer_ticket(sender, ticket_object, recipient)` - Transfer if allowed
-- `use_ticket(user, ticket_object)` - Mark ticket as used
-- `validate_ticket(validator, ticket_object, event_object)` - Business validates entry
-- `cancel_event(business, event_object)` - Cancel event
+- `use_ticket(user, ticket_object)` - User uses ticket (burns if non-permanent)
+- `check_in(staff, ticket_object, event_object, qr_hash)` - Staff validates and checks in (burns if non-permanent)
+- `cancel_event(business, event_object)` - Permanently cancel event
+- `deactivate_event(business, event_object)` - Temporarily deactivate
+- `reactivate_event(business, event_object)` - Reactivate event
 - `reset_permanent_ticket(owner, ticket_object)` - Reset permanent ticket for reuse
 
 **View Functions:**
-- `get_event_info(event_object)` - All event details
-- `get_ticket_info(ticket_object)` - All ticket details
+- `get_event_info(event_object)` - All event details including payment_processor
+- `get_ticket_info(ticket_object)` - All ticket details including is_burned
+- `validate_ticket(ticket_object, event_object, qr_hash)` - Verify ticket validity (read-only)
 - `is_ticket_valid(ticket_object)` - Check if ticket can be used
 - `get_event_business(event_object)` - Get event owner
-- `is_event_active(event_object)` - Check event status
+- `is_event_active(event_object)` - Check if event is active and not cancelled
+- `is_event_cancelled(event_object)` - Check if event is cancelled
 - `verify_qr_hash(ticket_object, hash)` - Validate QR hash
+- `get_ticket_price(event_object)` - Get ticket price
+- `get_tickets_remaining(event_object)` - Get remaining tickets
+- `get_payment_processor(event_object)` - Get payment processor address
 
 **Events (Logs):**
 - EventCreated, TicketPurchased, TicketValidated
-- TicketTransferred, TicketUsed, EventCancelled
+- TicketTransferred, TicketUsed, TicketBurned
+- EventCancelled, CheckInCompleted, PaymentProcessorSet
+
+**Payment Flow:**
+1. Business creates event with `payment_processor` = backend x402 address
+2. Client pays off-chain via x402
+3. Backend calls `mint_ticket_after_payment` to mint ticket
+4. Ticket is created for the buyer
+
+**Ticket Lifecycle (Non-Permanent):**
+1. Mint → `is_used=false, is_burned=false`
+2. Use/Check-in → `is_used=true, is_burned=true` + resource deleted
+
+**Ticket Lifecycle (Permanent):**
+1. Mint → `is_used=false, is_burned=false`
+2. Use/Check-in → `is_used=true` (resource stays)
+3. Reset → `is_used=false` (ready for reuse)
 
 ## Running the Project
 
