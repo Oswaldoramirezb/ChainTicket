@@ -46,3 +46,5 @@ contracts/.aptos/
 
 # Misc
 *.log
+
+attached_assets/
