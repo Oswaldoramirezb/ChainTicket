@@ -130,6 +130,23 @@ module ticketchain::ticket {
         set_by: address,
     }
 
+    #[event]
+    struct TicketResold has drop, store {
+        ticket_address: address,
+        event_address: address,
+        from: address,
+        to: address,
+        resale_price: u64,
+    }
+
+    #[event]
+    struct RefundProcessed has drop, store {
+        ticket_address: address,
+        event_address: address,
+        refunded_to: address,
+        amount: u64,
+    }
+
     public entry fun create_event(
         business: &signer,
         admin_registry_address: address,
@@ -554,6 +571,39 @@ module ticketchain::ticket {
         
         ticket_data.is_used = false;
     }
+
+    /// Revender un ticket (si está permitido)
+    public entry fun resell_ticket(
+        seller: &signer,
+        ticket_object: Object<Ticket>,
+        buyer: address,
+        resale_price: u64,
+    ) acquires Ticket, Event {
+        let seller_addr = signer::address_of(seller);
+        let ticket_addr = object::object_address(&ticket_object);
+        let ticket_data = borrow_global_mut<Ticket>(ticket_addr);
+        
+        assert!(ticket_data.owner == seller_addr, E_NOT_TICKET_OWNER);
+        assert!(!ticket_data.is_used, E_TICKET_ALREADY_USED);
+        assert!(!ticket_data.is_burned, E_TICKET_BURNED);
+        
+        let event_data = borrow_global<Event>(ticket_data.event_id);
+        assert!(event_data.is_active, E_EVENT_INACTIVE);
+        assert!(!event_data.is_cancelled, E_EVENT_CANCELLED);
+        assert!(event_data.resalable, E_RESALE_NOT_ALLOWED);
+        
+        let event_id = ticket_data.event_id;
+        ticket_data.owner = buyer;
+
+        event::emit(TicketResold {
+            ticket_address: ticket_addr,
+            event_address: event_id,
+            from: seller_addr,
+            to: buyer,
+            resale_price,
+        });
+    }
+
 
     #[view]
     public fun get_event_info(event_object: Object<Event>): (
