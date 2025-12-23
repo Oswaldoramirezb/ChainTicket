@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { wrapFetchWithPayment } from '@coinbase/x402/client';
 
 // Configuración de Movement Network
 const MOVEMENT_CONFIG = {
@@ -53,6 +54,127 @@ export const useMovement = () => {
         function: `${CONTRACT_ADDRESS}::admin_registry::initialize`,
         type_arguments: [],
         arguments: []
+      };
+
+      const response = await wallet.sendTransaction(payload);
+      return response;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [getWallet]);
+
+  // ============================================
+  // x402 PAYMENT FUNCTIONS
+  // ============================================
+
+  // Comprar ticket con pago x402
+  const purchaseTicketWithPayment = useCallback(async (eventAddress, ticketPrice) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const wallet = getWallet();
+      if (!wallet) throw new Error('Wallet no conectado');
+
+      // Obtener el signer de Privy para x402
+      const provider = await wallet.getEthereumProvider();
+      
+      // Wrap fetch con x402 para manejar pagos automáticamente
+      const paymentFetch = wrapFetchWithPayment(fetch, {
+        // Función para firmar el pago
+        signPayment: async (paymentRequirements) => {
+          // Construir el payload de pago
+          const { maxAmountRequired, payTo, asset, network } = paymentRequirements;
+          
+          // Firmar con el wallet de Privy
+          const signature = await provider.request({
+            method: 'eth_signTypedData_v4',
+            params: [wallet.address, JSON.stringify({
+              // EIP-712 typed data para transferWithAuthorization
+              domain: {
+                name: 'USD Coin',
+                version: '2',
+                chainId: network === 'base-sepolia' ? 84532 : 8453,
+                verifyingContract: asset,
+              },
+              types: {
+                TransferWithAuthorization: [
+                  { name: 'from', type: 'address' },
+                  { name: 'to', type: 'address' },
+                  { name: 'value', type: 'uint256' },
+                  { name: 'validAfter', type: 'uint256' },
+                  { name: 'validBefore', type: 'uint256' },
+                  { name: 'nonce', type: 'bytes32' },
+                ],
+              },
+              primaryType: 'TransferWithAuthorization',
+              message: {
+                from: wallet.address,
+                to: payTo,
+                value: maxAmountRequired,
+                validAfter: 0,
+                validBefore: Math.floor(Date.now() / 1000) + 3600,
+                nonce: `0x${crypto.randomUUID().replace(/-/g, '')}`,
+              },
+            })],
+          });
+          
+          return signature;
+        },
+      });
+
+      // Hacer la request con pago automático
+      const response = await paymentFetch('http://localhost:3001/api/purchase-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventAddress,
+          buyerAddress: wallet.address,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Purchase failed');
+      }
+
+      const result = await response.json();
+      return result;
+      
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [getWallet]);
+
+  // Función simplificada para tickets gratis (sin x402)
+  const purchaseFreeTicket = useCallback(async (eventAddress) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const wallet = getWallet();
+      if (!wallet) throw new Error('Wallet no conectado');
+
+      // Generar QR hash localmente
+      const qrHash = Array.from(
+        new Uint8Array(
+          await crypto.subtle.digest('SHA-256', 
+            new TextEncoder().encode(`${eventAddress}-${wallet.address}-${Date.now()}`)
+          )
+        )
+      );
+
+      const payload = {
+        type: 'entry_function_payload',
+        function: `${CONTRACT_ADDRESS}::ticket::purchase_ticket_free`,
+        type_arguments: [],
+        arguments: [eventAddress, qrHash],
       };
 
       const response = await wallet.sendTransaction(payload);
@@ -510,6 +632,9 @@ export const useMovement = () => {
     getTicketInfo,
     verifyQrHash,
     getTicketsRemaining,
+
+    purchaseTicketWithPayment,
+    purchaseFreeTicket,
   };
 };
 
