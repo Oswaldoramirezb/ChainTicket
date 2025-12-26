@@ -241,13 +241,23 @@ Admin Controls:
 ## Authentication & Registration
 
 - **Privy** integration for wallet/social authentication (Email, Wallet, or Social Login)
-- Login page only shows "Enter Portal" button - uses 100% Privy authentication
+- Login page shows "Enter Portal" button for Privy authentication
+- **Guest Mode**: Users can browse without registering (data expires after 24 hours)
 - **Registration flow**: 
   1. User clicks "Enter Portal" and authenticates via Privy
   2. New users are redirected to registration page
   3. User selects role: "Cliente" (client) or "Administrador" (admin/vendor)
   4. Admins can skip the profile form and complete it later from "My Profile" or "Services"
   5. User data is stored in PostgreSQL database (synced with Privy ID)
+  6. If user was browsing as guest, their data is preserved upon registration
+
+## Guest/Visitor Mode
+
+- **24-hour session**: Guest data stored in localStorage expires after 24 hours
+- **Client guests**: Can browse events, vendors, bars, restaurants, theater entries
+- **Admin guests**: Can create services/events but CANNOT activate them
+- **Sign-in banner**: Appears at top of all pages for guests with quick Privy login
+- **Data preservation**: When guest signs in, their browsing data is preserved
 
 ## User Profiles
 

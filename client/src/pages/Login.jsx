@@ -3,27 +3,40 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import AnimatedBackground from '../components/AnimatedBackground';
 import logo from '../assets/logo.jpg';
-import { Wallet, ArrowRight } from 'lucide-react';
+import { Wallet, ArrowRight, User, Building2, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const { connectWallet, loading, authenticated, user, ready, needsRegistration } = useAuth();
+    const { connectWallet, loading, authenticated, user, ready, needsRegistration, enterAsGuest } = useAuth();
     const navigate = useNavigate();
+    const [showGuestOptions, setShowGuestOptions] = useState(false);
 
     useEffect(() => {
-        if (ready && authenticated && user) {
-            if (needsRegistration) {
-                navigate('/register');
-            } else if (user.role === 'admin') {
-                navigate('/admin');
-            } else {
-                navigate('/client');
+        if (ready && user) {
+            if (user.isGuest) {
+                if (user.role === 'admin') {
+                    navigate('/admin');
+                } else {
+                    navigate('/client');
+                }
+            } else if (authenticated) {
+                if (needsRegistration) {
+                    navigate('/register');
+                } else if (user.role === 'admin') {
+                    navigate('/admin');
+                } else {
+                    navigate('/client');
+                }
             }
         }
     }, [ready, authenticated, user, navigate, needsRegistration]);
 
     const handleWallet = async () => {
         await connectWallet();
+    };
+
+    const handleGuestEntry = (guestType) => {
+        enterAsGuest(guestType);
     };
 
     if (!ready) {
@@ -87,7 +100,59 @@ const Login = () => {
                 </motion.button>
 
                 <p className="text-[10px] text-gray-500 mt-6 text-center tracking-widest uppercase">
-                    Email, Wallet, or Social Login
+                    Powered by Privy
+                </p>
+
+                <div className="w-full border-t border-[#333] my-6" />
+
+                {!showGuestOptions ? (
+                    <motion.button
+                        onClick={() => setShowGuestOptions(true)}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full py-3 px-6 border border-[#444] rounded-lg text-gray-400 hover:text-[#FFD700] hover:border-[#FFD700]/50 transition-all flex items-center justify-center gap-3"
+                    >
+                        <Eye className="w-4 h-4" />
+                        <span className="text-sm tracking-wider">CONTINUE AS GUEST</span>
+                    </motion.button>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full space-y-3"
+                    >
+                        <p className="text-[10px] text-gray-500 text-center tracking-widest uppercase mb-4">
+                            Select Guest Mode
+                        </p>
+                        <motion.button
+                            onClick={() => handleGuestEntry('client')}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full py-3 px-6 border border-[#444] rounded-lg text-gray-400 hover:text-[#FFD700] hover:border-[#FFD700]/50 transition-all flex items-center justify-center gap-3"
+                        >
+                            <User className="w-4 h-4" />
+                            <span className="text-sm tracking-wider">BROWSE AS CLIENT</span>
+                        </motion.button>
+                        <motion.button
+                            onClick={() => handleGuestEntry('admin')}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full py-3 px-6 border border-[#444] rounded-lg text-gray-400 hover:text-[#FFD700] hover:border-[#FFD700]/50 transition-all flex items-center justify-center gap-3"
+                        >
+                            <Building2 className="w-4 h-4" />
+                            <span className="text-sm tracking-wider">PREVIEW AS ADMIN</span>
+                        </motion.button>
+                        <button
+                            onClick={() => setShowGuestOptions(false)}
+                            className="w-full text-[10px] text-gray-600 hover:text-gray-400 mt-2"
+                        >
+                            Cancel
+                        </button>
+                    </motion.div>
+                )}
+
+                <p className="text-[9px] text-gray-600 mt-4 text-center">
+                    Guest data expires after 24 hours
                 </p>
             </motion.div>
 
