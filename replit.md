@@ -1,312 +1,44 @@
 # Chain Ticket - Movement M1 Hackathon
 
 ## Overview
-Chain Ticket is a tokenized ticketing platform built on Movement blockchain for the M1 Hackathon. It allows businesses to create, sell, and manage tokenized tickets (NFTs) for events, capacity limits, or special offers.
+Chain Ticket is a tokenized ticketing platform built on the Movement blockchain. It enables businesses to create, sell, and manage tokenized tickets (NFTs) for various purposes like events, capacity limits, or special offers. The platform supports diverse vendor types, from social events and restaurants to supermarkets and spas, each with tailored ticketing strategies. The project aims to provide a robust and flexible solution for modern ticketing and access control.
 
-## Demo Data
+## User Preferences
+I prefer simple language and clear, direct instructions. I want iterative development, with small, testable changes. Please ask before making any major architectural changes or introducing new dependencies. Do not make changes to the `replit.md` file itself.
 
-The application includes 3 demo administrators with demo wallet addresses:
+## System Architecture
 
-### 1. Elite Events (Social Events)
-- **Admin**: Carlos Eventos (demo_events_admin)
-- **Wallet**: 0xDemo1234567890EventsAdmin1234567890ABCDEF
-- **Services**: VIP Gala Night, Networking Cocktail Party, Live Concert Experience, Art Exhibition Opening, Rooftop Party, Wine Tasting Soiree
+### UI/UX Decisions
+The frontend is built with React and Vite, utilizing Tailwind CSS for styling to ensure a modern and responsive design. Framer Motion is integrated for smooth animations, enhancing the user experience. The application features distinct navigation for clients (bottom nav) and admins (sidebar + bottom nav), focusing on intuitive access to features.
 
-### 2. Premium Steakhouse (Restaurant)
-- **Admin**: Maria Garcia (demo_restaurant_admin)
-- **Wallet**: 0xDemo1234567890RestaurantAdmin1234567890AB
-- **Services**: Chef Table Experience, Weekend Brunch Reservation, Private Dining Room, Prime Steak Dinner, Wine Pairing Dinner
+### Technical Implementations
+- **Frontend**: React 18.2.0 with Vite, Tailwind CSS, Framer Motion, React Router. Privy 1.88.4 is used for robust wallet authentication, supporting email, wallet, and social logins.
+- **Backend**: Express.js API server, PostgreSQL for user persistence, and OpenAI integration for AI-driven recommendations.
+- **Blockchain**: Movement blockchain using Move language for smart contracts.
 
-### 3. Golden Bar & Lounge (Bar)
-- **Admin**: Roberto Martinez (demo_bar_admin)
-- **Wallet**: 0xDemo1234567890BarAdmin1234567890ABCDEFGH
-- **Services**: VIP Table Reservation, Cocktail Masterclass, Happy Hour Pass, Live Jazz Night, Whiskey Tasting Flight
+### Feature Specifications
+- **Tokenized Ticket Creation**: Businesses can create NFT tickets for events or services.
+- **AI Recommendations**: Suggestions for ticket quantities and business insights powered by OpenAI.
+- **QR Validation**: Secure scanning and validation of tickets at entry points.
+- **Analytics Dashboard**: Comprehensive tracking of sales and revenue for businesses.
+- **Authentication**: Privy handles user authentication, supporting both client and vendor roles.
+- **Guest Mode**: Users can browse anonymously for 24 hours, with data preservation upon registration.
+- **User Profiles**: Editable profiles for both clients and vendors, storing personal and business details.
+- **Vendor Types & Strategies**: Support for various vendor types (e.g., events, restaurant, supermarket) with specific ticketing strategies (e.g., `per_service`, `queue_only`, `per_order`).
+- **Services/Tickets Management**: Admins can add, edit, activate/deactivate, and delete services/tickets, managing details like title, image, duration, stock, and schedule.
 
-**Total: 16 active services with Unsplash images**
+### System Design Choices
+- **Client-Server Architecture**: A clear separation between the React frontend and Express.js backend.
+- **Smart Contract Architecture**:
+    - **AdminRegistry**: Manages administrator roles and permissions, including superadmin functionalities and self-service options for adding admins.
+    - **Ticket**: Core contract for event and ticket NFTs, handling creation, minting, transfer, usage, burning, and event cancellation. It supports both permanent and non-permanent ticket lifecycles.
+    - **BusinessProfile**: Stores business-specific metadata for AI recommendations, including capacity, peak hours, event metrics, and associated admin registries.
+- **Payment Flow**: Off-chain payment processing (via backend) followed by on-chain ticket minting, ensuring flexibility and efficiency.
+- **QR Code System**: Secure QR code generation and validation for ticket check-ins, leveraging hashes for integrity.
 
-To reseed demo data: `curl -X POST http://localhost:3001/api/seed`
-
-## Project Structure
-
-```
-/
-├── client/              # React + Vite frontend
-│   ├── src/
-│   │   ├── components/  # Reusable UI components
-│   │   ├── context/     # React contexts (AuthContext, DataContext)
-│   │   ├── pages/       # Page components
-│   │   │   ├── admin/   # Admin pages (Dashboard, Services, Profile)
-│   │   │   ├── client/  # Client pages (VendorSelection, Menu, Cart, Orders, Profile)
-│   │   │   ├── Login.jsx
-│   │   │   └── Registration.jsx
-│   │   └── assets/      # Images and static assets
-│   ├── vite.config.js
-│   └── package.json
-├── backend/             # Express.js API server
-│   ├── server.js
-│   └── package.json
-├── contracts/           # Movement Move smart contracts
-│   ├── sources/
-│   │   ├── admin_registry.move
-│   │   ├── business_profile.move
-│   │   └── ticket.move
-│   └── Move.toml
-└── replit.md            # This file
-```
-
-## Tech Stack
-
-### Frontend
-- **React 18.2.0** with Vite
-- **Tailwind CSS** for styling
-- **Framer Motion** for animations
-- **Privy 1.88.4** for wallet authentication (email, wallet, social login)
-- **React Router** for navigation
-
-### Backend
-- **Express.js** API
-- **PostgreSQL** database for user persistence
-- OpenAI integration for AI recommendations
-
-### Database Schema
-```sql
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  privy_id VARCHAR(255) UNIQUE NOT NULL,
-  wallet_address VARCHAR(255),
-  user_type VARCHAR(50) DEFAULT 'user',  -- 'user' or 'vendor'
-  full_name VARCHAR(255),
-  email VARCHAR(255),
-  phone VARCHAR(50),
-  location VARCHAR(255),
-  business_name VARCHAR(255),
-  profile_complete BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Blockchain
-- **Movement blockchain** (Move language)
-- Smart contracts for ticket NFT creation, purchase, and validation
-
-## Smart Contracts Architecture
-
-### 1. AdminRegistry (admin_registry.move)
-Manages administrator roles for the platform with support for multiple superadmins.
-
-**Entry Functions:**
-- `initialize(superadmin)` - Creates the registry with initial superadmin (protected against double init)
-- `add_superadmin(caller, registry_address, new_superadmin)` - Add another superadmin
-- `remove_superadmin(caller, registry_address, superadmin_to_remove)` - Remove a superadmin (can't remove last one)
-- `transfer_superadmin(caller, registry_address, new_superadmin)` - Transfer superadmin role to another address
-- `set_admin_self_service(caller, registry_address, enabled)` - Enable/disable admins adding other admins
-- `add_admin(caller, registry_address, new_admin)` - Add admin (superadmins always can, admins if self-service enabled)
-- `remove_admin(caller, registry_address, admin_to_remove)` - Superadmin removes admins
-
-**View Functions:**
-- `is_admin(registry_address, addr)` - Check if address is admin
-- `is_superadmin(registry_address, addr)` - Check if address is superadmin
-- `get_superadmins(registry_address)` - Get list of all superadmins
-- `get_all_admins(registry_address)` - Get list of all admins
-- `is_admin_self_service_enabled(registry_address)` - Check if admin self-service is enabled
-
-### 2. Ticket (ticket.move)
-Main contract for events and ticket NFTs with payment verification and burn functionality.
-
-**Event Struct Fields:**
-- `name`, `description`, `business_address`
-- `total_tickets`, `tickets_sold`, `ticket_price`
-- `is_active` - Event can accept new tickets
-- `is_cancelled` - Event permanently cancelled
-- `transferable` - Can tickets be transferred between users
-- `resalable` - Can tickets be resold
-- `permanent` - Tickets can be reused (vs single-use)
-- `refundable` - Can tickets be refunded
-- `payment_processor` - Address authorized to mint tickets after payment
-
-**Ticket Struct Fields:**
-- `event_id`, `ticket_number`, `owner`
-- `is_used` - Has the ticket been used
-- `is_burned` - Ticket has been permanently destroyed (non-permanent only)
-- `permanent` - Copied from event config
-- `qr_hash` - Hash for QR code validation
-
-**Entry Functions:**
-- `create_event(...)` - Business creates event with all configurations including payment_processor
-- `set_payment_processor(business, event_object, processor)` - Change payment processor
-- `mint_ticket_after_payment(processor, event_object, buyer, qr_hash)` - Mint ticket (only by payment_processor or business)
-- `purchase_ticket_free(buyer, event_object, qr_hash)` - Mint free ticket (only if price == 0)
-- `transfer_ticket(sender, ticket_object, recipient)` - Transfer if allowed
-- `use_ticket(user, ticket_object)` - User uses ticket (burns if non-permanent)
-- `check_in(staff, ticket_object, event_object, qr_hash)` - Staff validates and checks in (burns if non-permanent)
-- `cancel_event(business, event_object)` - Permanently cancel event
-- `deactivate_event(business, event_object)` - Temporarily deactivate
-- `reactivate_event(business, event_object)` - Reactivate event
-- `reset_permanent_ticket(owner, ticket_object)` - Reset permanent ticket for reuse
-
-**View Functions:**
-- `get_event_info(event_object)` - All event details including payment_processor
-- `get_ticket_info(ticket_object)` - All ticket details including is_burned
-- `validate_ticket(ticket_object, event_object, qr_hash)` - Verify ticket validity (read-only)
-- `is_ticket_valid(ticket_object)` - Check if ticket can be used
-- `get_event_business(event_object)` - Get event owner
-- `is_event_active(event_object)` - Check if event is active and not cancelled
-- `is_event_cancelled(event_object)` - Check if event is cancelled
-- `verify_qr_hash(ticket_object, hash)` - Validate QR hash
-- `get_ticket_price(event_object)` - Get ticket price
-- `get_tickets_remaining(event_object)` - Get remaining tickets
-- `get_payment_processor(event_object)` - Get payment processor address
-
-**Events (Logs):**
-- EventCreated, TicketPurchased, TicketValidated
-- TicketTransferred, TicketUsed, TicketBurned
-- EventCancelled, CheckInCompleted, PaymentProcessorSet
-
-**Payment Flow:**
-1. Business creates event with `payment_processor` = backend x402 address
-2. Client pays off-chain via x402
-3. Backend calls `mint_ticket_after_payment` to mint ticket
-4. Ticket is created for the buyer
-
-**Ticket Lifecycle (Non-Permanent):**
-1. Mint → `is_used=false, is_burned=false`
-2. Use/Check-in → `is_used=true, is_burned=true` + resource deleted
-
-**Ticket Lifecycle (Permanent):**
-1. Mint → `is_used=false, is_burned=false`
-2. Use/Check-in → `is_used=true` (resource stays)
-3. Reset → `is_used=false` (ready for reuse)
-
-### 3. BusinessProfile (business_profile.move)
-Stores business metadata for AI recommendations.
-
-**Fields:**
-- `owner`, `business_name`, `business_type`
-- `max_capacity` - Maximum venue capacity
-- `average_consumption` - Average spend per customer
-- `peak_days` - Vector of peak days (0=Sunday, 6=Saturday)
-- `peak_hours_start`, `peak_hours_end` - Peak hours range
-- `typical_event_duration_hours`
-- `average_ticket_price`
-- `monthly_events_count`
-- `customer_return_rate` - Percentage of returning customers
-- `admin_registry` - Associated admin registry address
-
-**Entry Functions:**
-- `create_profile(...)` - Create business profile with all metadata
-- `update_capacity_metrics(...)` - Update capacity and consumption
-- `update_peak_schedule(...)` - Update peak days and hours
-- `update_event_metrics(...)` - Update event-related metrics
-
-**View Functions:**
-- `get_profile_info(...)` - All profile data
-- `get_ai_recommendation_data(...)` - Data optimized for AI recommendations
-- `get_admin_registry(...)`, `get_max_capacity(...)`, `get_owner(...)`
-
-## Entry Flow (Check-in at Venue)
-
-```
-1. Client shows QR code (contains ticket_address + nonce hash)
-2. Staff scans QR → extract ticket_address and qr_hash
-3. Call verify_qr_hash(ticket_object, hash) → confirms QR matches ticket
-4. Call is_ticket_valid(ticket_object) → confirms ticket is usable
-5. Call check_in(staff, ticket_object, event_object, qr_hash):
-   - Verifies staff is admin of event's registry OR is business owner
-   - Validates QR hash matches
-   - For non-permanent: marks used, burns ticket (deletes resource)
-   - For permanent: just records usage (ticket persists)
-6. Emit CheckInCompleted event for off-chain logging
-```
-
-**QR Code Generation (off-chain):**
-```
-qr_data = hash(ticket_address + nonce)
-store qr_hash in ticket.qr_hash at mint time
-QR code encodes: { ticket_address, qr_data }
-```
-
-## Running the Project
-
-The frontend runs on port 5000, backend on port 3001.
-
-## Key Features (MVP)
-
-1. **Ticket Creation** - Businesses create tokenized event tickets
-2. **AI Recommendations** - Get suggestions on ticket quantities
-3. **QR Validation** - Scan tickets at entry points
-4. **Analytics Dashboard** - Track sales and revenue
-
-## Vendor Categories
-
-- **Bar** - Golden Bar & Lounge
-- **Restaurant** - Premium Steakhouse
-- **Coffee** - Artisan Coffee Co.
-- **Social Event** - Elite Events (VIP Gala, Networking Parties, Concerts, Art Exhibitions)
-
-## Services/Tickets Management (Admin)
-
-Each service/ticket includes:
-- **Title** - Name of the service/event
-- **Image** - Visual representation
-- **Duration** - How long the service/event lasts
-- **Total Tickets** - Maximum capacity
-- **Sold Count** - Tickets already sold
-- **isActive** - Enable/disable the service
-- **Schedule** - Operating hours and days
-
-Admin Controls:
-- **Add Service** - Create new tickets/services with schedule
-- **Edit** - Modify title, duration, stock, schedule, and operating days
-- **Activate/Deactivate** - Toggle service availability (green power button)
-- **Delete** - Remove service with confirmation dialog
-
-## Authentication & Registration
-
-- **Privy** integration for wallet/social authentication (Email, Wallet, or Social Login)
-- Login page shows "Enter Portal" button for Privy authentication
-- **Guest Mode**: Users can browse without registering (data expires after 24 hours)
-- **Registration flow**: 
-  1. User clicks "Enter Portal" and authenticates via Privy
-  2. New users are redirected to registration page
-  3. User selects role: "Cliente" (client) or "Administrador" (admin/vendor)
-  4. Admins can skip the profile form and complete it later from "My Profile" or "Services"
-  5. User data is stored in PostgreSQL database (synced with Privy ID)
-  6. If user was browsing as guest, their data is preserved upon registration
-
-## Guest/Visitor Mode
-
-- **24-hour session**: Guest data stored in localStorage expires after 24 hours
-- **Client guests**: Can browse events, vendors, bars, restaurants, theater entries
-- **Admin guests**: Can create services/events but CANNOT activate them
-- **Sign-in banner**: Appears at top of all pages for guests with quick Privy login
-- **Data preservation**: When guest signs in, their browsing data is preserved
-
-## User Profiles
-
-- Both clients and admins have "My Profile" pages
-- Users can edit: Full Name, Email, Phone, Location
-- Vendors can also set: Business Name
-- Profile data is stored in PostgreSQL database and synced across sessions
-
-## Navigation
-
-### Client Navigation (Bottom Nav Mobile)
-- Catalog - Browse establishments
-- Wallet - View orders/tickets
-- Profile - Manage account
-
-### Admin Navigation (Sidebar + Bottom Nav Mobile)
-- Overview - Manage orders/queue
-- Services - Manage tickets/services with schedules
-- My Profile - Account settings
-
-## Important Notes
-
-- Privy version must stay at 1.88.4 to avoid React hook conflicts
-- React must stay at 18.2.0 for compatibility with Privy
-- Vite config includes aliases to prevent duplicate React instances
-- Hook errors in console are related to Privy's iframe integration in Replit environment
-
-## Privy App ID
-clpispdty00ycl80fpueukbhl
+## External Dependencies
+- **Privy (1.88.4)**: Wallet authentication for email, wallet, and social logins.
+- **PostgreSQL**: Database for persisting user and business data.
+- **Movement Blockchain**: The underlying blockchain for smart contract deployment and tokenized ticketing.
+- **OpenAI**: Integrated for AI recommendations, such as ticket quantity suggestions.
+- **Unsplash**: Used for demo image assets.
