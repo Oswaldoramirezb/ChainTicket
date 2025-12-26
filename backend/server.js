@@ -841,6 +841,161 @@ app.post('/api/ai/recommendations', async (req, res) => {
 });
 
 // ============================================
+// SEED DATA - Demo Administrators and Services
+// ============================================
+
+app.post('/api/seed', async (req, res) => {
+  try {
+    // Check if seed data already exists
+    const existingUsers = await pool.query(
+      "SELECT COUNT(*) FROM users WHERE privy_id LIKE 'demo_%'"
+    );
+    
+    if (parseInt(existingUsers.rows[0].count) > 0) {
+      return res.json({ success: true, message: 'Seed data already exists' });
+    }
+    
+    // Create 3 demo administrators
+    const admins = [
+      {
+        privy_id: 'demo_events_admin',
+        wallet_address: '0xDemo1234567890EventsAdmin1234567890ABCDEF',
+        user_type: 'vendor',
+        full_name: 'Carlos Eventos',
+        email: 'carlos@eliteevents.com',
+        phone: '+52 55 1234 5678',
+        location: 'Ciudad de Mexico',
+        business_name: 'Elite Events',
+        profile_complete: true
+      },
+      {
+        privy_id: 'demo_restaurant_admin',
+        wallet_address: '0xDemo1234567890RestaurantAdmin1234567890AB',
+        user_type: 'vendor',
+        full_name: 'Maria Garcia',
+        email: 'maria@premiumsteakhouse.com',
+        phone: '+52 55 2345 6789',
+        location: 'Polanco, CDMX',
+        business_name: 'Premium Steakhouse',
+        profile_complete: true
+      },
+      {
+        privy_id: 'demo_bar_admin',
+        wallet_address: '0xDemo1234567890BarAdmin1234567890ABCDEFGH',
+        user_type: 'vendor',
+        full_name: 'Roberto Martinez',
+        email: 'roberto@goldenbar.com',
+        phone: '+52 55 3456 7890',
+        location: 'Roma Norte, CDMX',
+        business_name: 'Golden Bar & Lounge',
+        profile_complete: true
+      }
+    ];
+    
+    // Insert admins and their vendors
+    const vendorImages = {
+      'demo_events_admin': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800',
+      'demo_restaurant_admin': 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800',
+      'demo_bar_admin': 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800'
+    };
+    const vendorTypes = {
+      'demo_events_admin': 'Social Events',
+      'demo_restaurant_admin': 'Restaurant',
+      'demo_bar_admin': 'Bar'
+    };
+    const vendorDescriptions = {
+      'demo_events_admin': 'Exclusive social events and premium experiences',
+      'demo_restaurant_admin': 'Fine dining steakhouse with world-class cuisine',
+      'demo_bar_admin': 'Premium cocktail bar and lounge'
+    };
+    
+    for (const admin of admins) {
+      // Insert user
+      const userResult = await pool.query(
+        `INSERT INTO users (privy_id, wallet_address, user_type, full_name, email, phone, location, business_name, profile_complete)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (privy_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+         RETURNING id`,
+        [admin.privy_id, admin.wallet_address, admin.user_type, admin.full_name, admin.email, admin.phone, admin.location, admin.business_name, admin.profile_complete]
+      );
+      
+      const userId = userResult.rows[0].id;
+      
+      // Insert vendor
+      await pool.query(
+        `INSERT INTO vendors (owner_id, name, type, image, description)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT DO NOTHING`,
+        [userId, admin.business_name, vendorTypes[admin.privy_id], vendorImages[admin.privy_id], vendorDescriptions[admin.privy_id]]
+      );
+    }
+    
+    // Services for Elite Events (Social Events)
+    const eventServices = [
+      { title: 'VIP Gala Night', description: 'Exclusive black-tie gala with live orchestra and gourmet dinner', image: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=800', avg_time: 240, total_stock: 200, price: 150.00, schedule_open_time: '19:00', schedule_close_time: '02:00', schedule_days: ['Friday', 'Saturday'] },
+      { title: 'Networking Cocktail Party', description: 'Premium networking event with open bar and appetizers', image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800', avg_time: 180, total_stock: 100, price: 75.00, schedule_open_time: '18:00', schedule_close_time: '23:00', schedule_days: ['Thursday', 'Friday'] },
+      { title: 'Live Concert Experience', description: 'Intimate concert with top artists and VIP seating', image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800', avg_time: 180, total_stock: 500, price: 85.00, schedule_open_time: '20:00', schedule_close_time: '01:00', schedule_days: ['Friday', 'Saturday'] },
+      { title: 'Art Exhibition Opening', description: 'Exclusive preview of contemporary art with wine tasting', image: 'https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=800', avg_time: 120, total_stock: 80, price: 45.00, schedule_open_time: '17:00', schedule_close_time: '22:00', schedule_days: ['Wednesday', 'Thursday', 'Friday'] },
+      { title: 'Rooftop Party', description: 'Sunset rooftop party with DJ and panoramic city views', image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800', avg_time: 240, total_stock: 150, price: 60.00, schedule_open_time: '18:00', schedule_close_time: '02:00', schedule_days: ['Friday', 'Saturday', 'Sunday'] },
+      { title: 'Wine Tasting Soiree', description: 'Curated wine tasting with sommelier and cheese pairing', image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800', avg_time: 150, total_stock: 40, price: 95.00, schedule_open_time: '19:00', schedule_close_time: '23:00', schedule_days: ['Thursday', 'Friday', 'Saturday'] }
+    ];
+    
+    // Services for Premium Steakhouse (Restaurant)
+    const restaurantServices = [
+      { title: 'Chef Table Experience', description: 'Exclusive 7-course tasting menu at the chef table', image: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800', avg_time: 180, total_stock: 8, price: 250.00, schedule_open_time: '19:00', schedule_close_time: '23:00', schedule_days: ['Wednesday', 'Thursday', 'Friday', 'Saturday'] },
+      { title: 'Weekend Brunch Reservation', description: 'Gourmet brunch with bottomless mimosas', image: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800', avg_time: 120, total_stock: 50, price: 65.00, schedule_open_time: '10:00', schedule_close_time: '15:00', schedule_days: ['Saturday', 'Sunday'] },
+      { title: 'Private Dining Room', description: 'Exclusive private room for special occasions', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800', avg_time: 180, total_stock: 4, price: 500.00, schedule_open_time: '18:00', schedule_close_time: '23:00', schedule_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] },
+      { title: 'Prime Steak Dinner', description: 'Premium USDA Prime ribeye dinner for two', image: 'https://images.unsplash.com/photo-1546833998-877b37c2e5c6?w=800', avg_time: 90, total_stock: 30, price: 180.00, schedule_open_time: '17:00', schedule_close_time: '22:00', schedule_days: ['Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] },
+      { title: 'Wine Pairing Dinner', description: '5-course dinner with premium wine pairings', image: 'https://images.unsplash.com/photo-1516594798947-e65505dbb29d?w=800', avg_time: 150, total_stock: 20, price: 195.00, schedule_open_time: '19:00', schedule_close_time: '23:00', schedule_days: ['Thursday', 'Friday', 'Saturday'] }
+    ];
+    
+    // Services for Golden Bar & Lounge (Bar)
+    const barServices = [
+      { title: 'VIP Table Reservation', description: 'Premium table with bottle service and dedicated waitress', image: 'https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=800', avg_time: 240, total_stock: 10, price: 300.00, schedule_open_time: '21:00', schedule_close_time: '04:00', schedule_days: ['Thursday', 'Friday', 'Saturday'] },
+      { title: 'Cocktail Masterclass', description: 'Learn to craft signature cocktails with our mixologist', image: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800', avg_time: 120, total_stock: 12, price: 85.00, schedule_open_time: '18:00', schedule_close_time: '20:00', schedule_days: ['Tuesday', 'Wednesday', 'Thursday'] },
+      { title: 'Happy Hour Pass', description: '2-for-1 drinks and appetizers during happy hour', image: 'https://images.unsplash.com/photo-1575444758702-4a6b9222336e?w=800', avg_time: 120, total_stock: 100, price: 25.00, schedule_open_time: '17:00', schedule_close_time: '20:00', schedule_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
+      { title: 'Live Jazz Night', description: 'Exclusive entry to live jazz performance with welcome drink', image: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800', avg_time: 180, total_stock: 60, price: 40.00, schedule_open_time: '20:00', schedule_close_time: '01:00', schedule_days: ['Friday', 'Saturday'] },
+      { title: 'Whiskey Tasting Flight', description: 'Premium whiskey tasting with 5 rare selections', image: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=800', avg_time: 90, total_stock: 20, price: 75.00, schedule_open_time: '19:00', schedule_close_time: '23:00', schedule_days: ['Wednesday', 'Thursday', 'Friday', 'Saturday'] }
+    ];
+    
+    // Insert services for each admin
+    const insertService = async (service, ownerPrivyId) => {
+      await pool.query(
+        `INSERT INTO services (owner_privy_id, title, description, image, avg_time, total_stock, sold, price, is_active, schedule_open_time, schedule_close_time, schedule_days)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [ownerPrivyId, service.title, service.description, service.image, service.avg_time, service.total_stock, 0, service.price, true, service.schedule_open_time, service.schedule_close_time, service.schedule_days]
+      );
+    };
+    
+    // Insert all services
+    for (const service of eventServices) {
+      await insertService(service, 'demo_events_admin');
+    }
+    for (const service of restaurantServices) {
+      await insertService(service, 'demo_restaurant_admin');
+    }
+    for (const service of barServices) {
+      await insertService(service, 'demo_bar_admin');
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Seed data created successfully',
+      data: {
+        admins: 3,
+        eventServices: eventServices.length,
+        restaurantServices: restaurantServices.length,
+        barServices: barServices.length,
+        totalServices: eventServices.length + restaurantServices.length + barServices.length
+      }
+    });
+  } catch (error) {
+    console.error('Error seeding data:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
 // SERVIDOR
 // ============================================
 

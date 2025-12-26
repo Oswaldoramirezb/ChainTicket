@@ -3,6 +3,29 @@
 ## Overview
 Chain Ticket is a tokenized ticketing platform built on Movement blockchain for the M1 Hackathon. It allows businesses to create, sell, and manage tokenized tickets (NFTs) for events, capacity limits, or special offers.
 
+## Demo Data
+
+The application includes 3 demo administrators with demo wallet addresses:
+
+### 1. Elite Events (Social Events)
+- **Admin**: Carlos Eventos (demo_events_admin)
+- **Wallet**: 0xDemo1234567890EventsAdmin1234567890ABCDEF
+- **Services**: VIP Gala Night, Networking Cocktail Party, Live Concert Experience, Art Exhibition Opening, Rooftop Party, Wine Tasting Soiree
+
+### 2. Premium Steakhouse (Restaurant)
+- **Admin**: Maria Garcia (demo_restaurant_admin)
+- **Wallet**: 0xDemo1234567890RestaurantAdmin1234567890AB
+- **Services**: Chef Table Experience, Weekend Brunch Reservation, Private Dining Room, Prime Steak Dinner, Wine Pairing Dinner
+
+### 3. Golden Bar & Lounge (Bar)
+- **Admin**: Roberto Martinez (demo_bar_admin)
+- **Wallet**: 0xDemo1234567890BarAdmin1234567890ABCDEFGH
+- **Services**: VIP Table Reservation, Cocktail Masterclass, Happy Hour Pass, Live Jazz Night, Whiskey Tasting Flight
+
+**Total: 16 active services with Unsplash images**
+
+To reseed demo data: `curl -X POST http://localhost:3001/api/seed`
+
 ## Project Structure
 
 ```
