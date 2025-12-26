@@ -366,12 +366,14 @@ export const DataProvider = ({ children }) => {
             const data = await response.json();
             if (data.success) {
                 await fetchMyOrders();
+                await fetchMyTickets();
                 await fetchServices(true);
                 await fetchQueueInfo();
                 return {
                     id: data.order.order_number,
                     dbId: data.order.id,
                     items,
+                    tickets: data.tickets,
                     status: 'pending',
                     estimatedWait: data.estimatedWait,
                     queuePosition: data.queuePosition
@@ -410,11 +412,13 @@ export const DataProvider = ({ children }) => {
             if (data.success) {
                 clearCart();
                 await fetchMyOrders();
+                await fetchMyTickets();
                 await fetchServices(true);
                 await fetchQueueInfo();
                 return {
                     id: data.order.order_number,
                     items,
+                    tickets: data.tickets,
                     status: 'pending',
                     estimatedWait: data.estimatedWait,
                     queuePosition: data.queuePosition
@@ -460,8 +464,10 @@ export const DataProvider = ({ children }) => {
             const data = await response.json();
             if (data.success) {
                 await fetchMyOrders();
+                await fetchMyTickets();
                 return {
                     order: data.order,
+                    ticket: data.ticket,
                     queuePosition: data.queuePosition,
                     estimatedWait: data.estimatedWait
                 };
