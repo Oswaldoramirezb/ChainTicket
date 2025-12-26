@@ -42,7 +42,26 @@ Chain Ticket is a tokenized ticketing platform built on Movement blockchain for 
 
 ### Backend
 - **Express.js** API
+- **PostgreSQL** database for user persistence
 - OpenAI integration for AI recommendations
+
+### Database Schema
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  privy_id VARCHAR(255) UNIQUE NOT NULL,
+  wallet_address VARCHAR(255),
+  user_type VARCHAR(50) DEFAULT 'user',  -- 'user' or 'vendor'
+  full_name VARCHAR(255),
+  email VARCHAR(255),
+  phone VARCHAR(50),
+  location VARCHAR(255),
+  business_name VARCHAR(255),
+  profile_complete BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
 ### Blockchain
 - **Movement blockchain** (Move language)
@@ -221,17 +240,21 @@ Admin Controls:
 
 ## Authentication & Registration
 
-- **Privy** integration for wallet/social authentication
-- Traditional username/password login also available
-- Test credentials: admin/123 or user/123
-- **New wallet registration flow**: When a new wallet connects, users select whether to register as User or Vendor, then fill out profile information
+- **Privy** integration for wallet/social authentication (Email, Wallet, or Social Login)
+- Login page only shows "Enter Portal" button - uses 100% Privy authentication
+- **Registration flow**: 
+  1. User clicks "Enter Portal" and authenticates via Privy
+  2. New users are redirected to registration page
+  3. User selects role: "Cliente" (client) or "Administrador" (admin/vendor)
+  4. Admins can skip the profile form and complete it later from "My Profile" or "Services"
+  5. User data is stored in PostgreSQL database (synced with Privy ID)
 
 ## User Profiles
 
 - Both clients and admins have "My Profile" pages
 - Users can edit: Full Name, Email, Phone, Location
 - Vendors can also set: Business Name
-- Profile data is stored in localStorage and persists across sessions
+- Profile data is stored in PostgreSQL database and synced across sessions
 
 ## Navigation
 
