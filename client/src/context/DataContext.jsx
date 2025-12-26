@@ -152,10 +152,24 @@ export const DataProvider = ({ children }) => {
         }
     }, []);
 
+    // Fetch vendors (establishments)
+    const fetchVendors = useCallback(async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/vendors`);
+            const data = await response.json();
+            if (data.vendors) {
+                setVendors(data.vendors);
+            }
+        } catch (error) {
+            console.error('Error fetching vendors:', error);
+        }
+    }, []);
+
     // Load initial data
     useEffect(() => {
         const loadData = async () => {
             setLoading(true);
+            await fetchVendors();
             await fetchServices(true);
             await fetchQueueInfo();
             if (user?.privyId && !isGuest) {
@@ -170,7 +184,7 @@ export const DataProvider = ({ children }) => {
             setLoading(false);
         };
         loadData();
-    }, [user?.privyId, user?.role, isGuest]);
+    }, [user?.privyId, user?.role, isGuest, fetchVendors]);
 
     // Service CRUD operations
     const addService = async (newService) => {
