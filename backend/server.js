@@ -633,6 +633,28 @@ app.post('/api/vendors', async (req, res) => {
   }
 });
 
+// Update vendor settings
+app.patch('/api/vendors/:id/settings', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { uses_cart } = req.body;
+    
+    const result = await pool.query(
+      `UPDATE vendors SET uses_cart = $1 WHERE id = $2 RETURNING *`,
+      [uses_cart, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Vendor not found' });
+    }
+    
+    res.json({ success: true, vendor: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating vendor settings:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Join queue (for supermarket/queue-only vendors)
 app.post('/api/queue/join', async (req, res) => {
   try {
@@ -661,9 +683,25 @@ app.post('/api/queue/join', async (req, res) => {
       [orderNumber, privyId || null, vendorId, estimatedWait, position]
     );
     
+    const orderId = orderResult.rows[0].id;
+    
+    // Generate queue ticket with vendor association
+    const ticketNumber = `QT-${Date.now().toString().slice(-8)}`;
+    const qrHash = crypto.createHash('sha256')
+      .update(`${vendorId}-${privyId}-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`)
+      .digest('hex').slice(0, 32);
+    
+    const ticketResult = await pool.query(
+      `INSERT INTO tickets (order_item_id, user_privy_id, service_id, ticket_number, qr_hash, status, vendor_id)
+       VALUES ($1, $2, $3, $4, $5, 'valid', $6)
+       RETURNING *`,
+      [orderId, privyId || null, null, ticketNumber, qrHash, vendorId]
+    );
+    
     res.json({ 
       success: true, 
       order: orderResult.rows[0],
+      ticket: ticketResult.rows[0],
       queuePosition: position,
       estimatedWait: estimatedWait
     });

@@ -6,18 +6,21 @@ import { useState, useEffect, useCallback } from 'react';
 
 const VendorMenu = () => {
     const { vendorId } = useParams();
-    const { vendors, services, cart, addToCart, joinQueue, getQueueStatus, orders } = useData();
+    const { vendors, services, cart, addToCart, purchaseDirectly, joinQueue, getQueueStatus, orders } = useData();
     const navigate = useNavigate();
     const [queueTime, setQueueTime] = useState(null);
     const [queuePosition, setQueuePosition] = useState(null);
     const [queueOrderId, setQueueOrderId] = useState(null);
     const [queueOrderNumber, setQueueOrderNumber] = useState(null);
     const [joining, setJoining] = useState(false);
+    const [purchasing, setPurchasing] = useState(null);
+    const [purchaseSuccess, setPurchaseSuccess] = useState(null);
 
     const vendor = vendors.find(v => v.id === parseInt(vendorId));
     const vendorServices = services.filter(s => s.vendorId === parseInt(vendorId));
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const vendorType = vendor?.vendor_type || vendor?.vendorType;
+    const usesCart = vendor?.uses_cart || vendor?.usesCart || false;
 
     useEffect(() => {
         if (vendorType === 'supermarket' && orders.length > 0) {
@@ -155,9 +158,18 @@ const VendorMenu = () => {
         );
     }
 
-    const isMenuBased = vendorType === 'restaurant_menu';
-    const buttonText = isMenuBased ? 'Add to Order' : 'Get Ticket';
-    const ButtonIcon = isMenuBased ? Plus : Ticket;
+    const handleDirectPurchase = async (serviceId) => {
+        setPurchasing(serviceId);
+        const result = await purchaseDirectly(serviceId, parseInt(vendorId));
+        setPurchasing(null);
+        if (result) {
+            setPurchaseSuccess(serviceId);
+            setTimeout(() => setPurchaseSuccess(null), 3000);
+        }
+    };
+
+    const buttonText = usesCart ? 'Add to Cart' : 'Get Ticket';
+    const ButtonIcon = usesCart ? Plus : Ticket;
 
     return (
         <div className="pb-20">
@@ -170,29 +182,29 @@ const VendorMenu = () => {
                     <span className="text-sm uppercase tracking-widest">Back</span>
                 </button>
 
-                <button
-                    onClick={() => navigate('/client/cart')}
-                    className="relative flex items-center gap-3 bg-[#FFD700] text-black px-6 py-3 hover:bg-white transition-colors"
-                >
-                    <ShoppingCart className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-widest">
-                        {isMenuBased ? 'Order' : 'Cart'}
-                    </span>
-                    {cartCount > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-black text-[#FFD700] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
-                            {cartCount}
-                        </span>
-                    )}
-                </button>
+                {usesCart && (
+                    <button
+                        onClick={() => navigate('/client/cart')}
+                        className="relative flex items-center gap-3 bg-[#FFD700] text-black px-6 py-3 hover:bg-white transition-colors"
+                    >
+                        <ShoppingCart className="w-5 h-5" />
+                        <span className="text-sm font-bold uppercase tracking-widest">Cart</span>
+                        {cartCount > 0 && (
+                            <span className="absolute -top-2 -right-2 bg-black text-[#FFD700] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
+                )}
             </div>
 
             <div className="mb-12 text-center">
                 <h2 className="text-4xl md:text-5xl font-bold font-serif text-gradient-gold tracking-widest uppercase">{vendor.name}</h2>
                 <p className="text-gray-400 text-sm mt-2 tracking-widest uppercase">{vendor.type}</p>
                 <div className="w-[1px] h-16 bg-gradient-to-b from-[#FFD700] to-transparent mx-auto mt-6" />
-                {isMenuBased && (
+                {usesCart && (
                     <p className="text-gray-500 text-xs mt-4 tracking-widest uppercase">
-                        Add items to your order - one ticket per order
+                        Add multiple services to your cart
                     </p>
                 )}
             </div>
@@ -232,14 +244,22 @@ const VendorMenu = () => {
                                 {service.totalStock - service.sold} available
                             </p>
 
-                            <button
-                                onClick={() => addToCart(service.id)}
-                                disabled={service.totalStock - service.sold <= 0}
-                                className="w-full bg-[#FFD700] text-black py-3 text-xs tracking-[0.3em] font-bold uppercase hover:bg-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ButtonIcon className="w-4 h-4" />
-                                {service.totalStock - service.sold <= 0 ? 'SOLD OUT' : buttonText}
-                            </button>
+                            {purchaseSuccess === service.id ? (
+                                <div className="w-full bg-green-600 text-white py-3 text-xs tracking-[0.3em] font-bold uppercase flex items-center justify-center gap-2">
+                                    <CheckCircle className="w-4 h-4" />
+                                    Ticket Purchased!
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => usesCart ? addToCart(service.id) : handleDirectPurchase(service.id)}
+                                    disabled={service.totalStock - service.sold <= 0 || purchasing === service.id}
+                                    className="w-full bg-[#FFD700] text-black py-3 text-xs tracking-[0.3em] font-bold uppercase hover:bg-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ButtonIcon className="w-4 h-4" />
+                                    {service.totalStock - service.sold <= 0 ? 'SOLD OUT' : 
+                                     purchasing === service.id ? 'Processing...' : buttonText}
+                                </button>
+                            )}
                         </div>
                     </motion.div>
                 ))}

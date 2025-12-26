@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, MapPin, Save, Edit2, Building } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Save, Edit2, Building, ShoppingCart, Ticket } from 'lucide-react';
 
 const AdminProfile = () => {
     const { user, updateUserProfile } = useAuth();
+    const { vendors, updateVendorSettings } = useData();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         fullName: user?.profile?.fullName || '',
@@ -13,6 +15,22 @@ const AdminProfile = () => {
         location: user?.profile?.location || '',
         businessName: user?.profile?.businessName || ''
     });
+
+    const myVendor = vendors.find(v => v.owner_id === user?.privyId);
+    const [usesCart, setUsesCart] = useState(myVendor?.uses_cart || false);
+
+    useEffect(() => {
+        if (myVendor) {
+            setUsesCart(myVendor.uses_cart || false);
+        }
+    }, [myVendor]);
+
+    const handleCartToggle = async (value) => {
+        setUsesCart(value);
+        if (myVendor) {
+            await updateVendorSettings(myVendor.id, { uses_cart: value });
+        }
+    };
 
     const handleSave = () => {
         updateUserProfile(formData);
@@ -145,6 +163,41 @@ const AdminProfile = () => {
                         </div>
                     </div>
                 </div>
+
+                {myVendor && (
+                    <div className="bg-[#111] border border-[#333] p-6 space-y-6 mt-6">
+                        <h3 className="text-lg font-bold text-white uppercase tracking-widest mb-4">Business Settings</h3>
+                        
+                        <div>
+                            <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-4 block">Purchase Mode</label>
+                            <p className="text-xs text-gray-400 mb-4">
+                                Choose how customers purchase your services
+                            </p>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => handleCartToggle(false)}
+                                    className={`p-4 border ${!usesCart ? 'border-[#FFD700] bg-[#FFD700]/10' : 'border-[#333] hover:border-[#555]'} transition-colors`}
+                                >
+                                    <Ticket className={`w-8 h-8 mx-auto mb-3 ${!usesCart ? 'text-[#FFD700]' : 'text-[#666]'}`} />
+                                    <p className={`text-sm font-bold ${!usesCart ? 'text-white' : 'text-gray-400'}`}>Direct Tickets</p>
+                                    <p className="text-xs text-gray-500 mt-1">One ticket per service</p>
+                                    <p className="text-[10px] text-gray-600 mt-2">Best for: Events, Bars, Queues</p>
+                                </button>
+                                
+                                <button
+                                    onClick={() => handleCartToggle(true)}
+                                    className={`p-4 border ${usesCart ? 'border-[#FFD700] bg-[#FFD700]/10' : 'border-[#333] hover:border-[#555]'} transition-colors`}
+                                >
+                                    <ShoppingCart className={`w-8 h-8 mx-auto mb-3 ${usesCart ? 'text-[#FFD700]' : 'text-[#666]'}`} />
+                                    <p className={`text-sm font-bold ${usesCart ? 'text-white' : 'text-gray-400'}`}>Shopping Cart</p>
+                                    <p className="text-xs text-gray-500 mt-1">Multiple services per order</p>
+                                    <p className="text-[10px] text-gray-600 mt-2">Best for: Spas, Menus, Packages</p>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </motion.div>
         </div>
     );
