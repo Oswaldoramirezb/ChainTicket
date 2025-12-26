@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AnimatedBackground from '../components/AnimatedBackground';
-import { User, Store, ArrowRight, Mail, Phone, MapPin, Building } from 'lucide-react';
+import { User, Store, ArrowRight, Mail, Phone, MapPin, Building, SkipForward } from 'lucide-react';
 
 const Registration = () => {
     const { completeRegistration, user } = useAuth();
@@ -20,11 +20,30 @@ const Registration = () => {
 
     const handleTypeSelect = (type) => {
         setUserType(type);
-        setStep(2);
+        if (type === 'user') {
+            setStep(2);
+        } else {
+            setStep(2);
+        }
     };
 
     const handleSubmit = async () => {
         await completeRegistration(userType, formData);
+        if (userType === 'vendor') {
+            navigate('/admin');
+        } else {
+            navigate('/client');
+        }
+    };
+
+    const handleSkip = async () => {
+        await completeRegistration(userType, {
+            fullName: '',
+            email: '',
+            phone: '',
+            location: '',
+            businessName: ''
+        });
         if (userType === 'vendor') {
             navigate('/admin');
         } else {
@@ -51,7 +70,7 @@ const Registration = () => {
                         <h2 className="text-3xl md:text-4xl font-bold font-serif text-gradient-gold tracking-widest uppercase mb-4">
                             Welcome
                         </h2>
-                        <p className="text-gray-400 text-sm mb-12 tracking-widest">How would you like to register?</p>
+                        <p className="text-gray-400 text-sm mb-12 tracking-widest">How would you like to use Chain Ticket?</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <button
@@ -61,8 +80,8 @@ const Registration = () => {
                                 <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center group-hover:bg-[#FFD700]/20 transition-colors">
                                     <User className="w-8 h-8 text-[#FFD700]" />
                                 </div>
-                                <h3 className="text-xl font-serif text-white mb-2">User</h3>
-                                <p className="text-gray-500 text-xs tracking-wide">Browse and purchase tickets for events and services</p>
+                                <h3 className="text-xl font-serif text-white mb-2">Cliente</h3>
+                                <p className="text-gray-500 text-xs tracking-wide">Compra tickets para eventos y servicios</p>
                             </button>
 
                             <button
@@ -72,8 +91,8 @@ const Registration = () => {
                                 <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center group-hover:bg-[#FFD700]/20 transition-colors">
                                     <Store className="w-8 h-8 text-[#FFD700]" />
                                 </div>
-                                <h3 className="text-xl font-serif text-white mb-2">Vendor</h3>
-                                <p className="text-gray-500 text-xs tracking-wide">Publish and sell tickets for your events and services</p>
+                                <h3 className="text-xl font-serif text-white mb-2">Administrador</h3>
+                                <p className="text-gray-500 text-xs tracking-wide">Publica y vende tickets para tus eventos</p>
                             </button>
                         </div>
                     </motion.div>
@@ -86,16 +105,23 @@ const Registration = () => {
                     >
                         <div className="text-center mb-10">
                             <div className="inline-block px-4 py-1 bg-[#FFD700]/10 border border-[#FFD700]/30 text-[#FFD700] text-xs uppercase tracking-widest mb-4">
-                                {userType === 'vendor' ? 'Vendor Registration' : 'User Registration'}
+                                {userType === 'vendor' ? 'Registro de Administrador' : 'Registro de Cliente'}
                             </div>
                             <h2 className="text-2xl md:text-3xl font-bold font-serif text-white tracking-widest uppercase">
-                                Complete Your Profile
+                                Completa tu Perfil
                             </h2>
+                            {userType === 'vendor' && (
+                                <p className="text-gray-500 text-xs mt-3 tracking-wide">
+                                    Puedes completar esto ahora o despues desde tu perfil
+                                </p>
+                            )}
                         </div>
 
                         <div className="space-y-5">
                             <div>
-                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 block">Full Name *</label>
+                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 block">
+                                    Nombre Completo {userType === 'user' && '*'}
+                                </label>
                                 <div className="flex items-center gap-3 bg-black/50 border border-[#333] focus-within:border-[#FFD700] p-4 transition-colors">
                                     <User className="w-5 h-5 text-[#666]" />
                                     <input
@@ -103,15 +129,14 @@ const Registration = () => {
                                         value={formData.fullName}
                                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                                         className="bg-transparent flex-1 text-white outline-none"
-                                        placeholder="Enter your full name"
-                                        required
+                                        placeholder="Ingresa tu nombre completo"
                                     />
                                 </div>
                             </div>
 
                             {userType === 'vendor' && (
                                 <div>
-                                    <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 block">Business Name *</label>
+                                    <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 block">Nombre del Negocio</label>
                                     <div className="flex items-center gap-3 bg-black/50 border border-[#333] focus-within:border-[#FFD700] p-4 transition-colors">
                                         <Building className="w-5 h-5 text-[#666]" />
                                         <input
@@ -119,8 +144,7 @@ const Registration = () => {
                                             value={formData.businessName}
                                             onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                                             className="bg-transparent flex-1 text-white outline-none"
-                                            placeholder="Enter your business name"
-                                            required
+                                            placeholder="Ingresa el nombre de tu negocio"
                                         />
                                     </div>
                                 </div>
@@ -135,13 +159,13 @@ const Registration = () => {
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         className="bg-transparent flex-1 text-white outline-none"
-                                        placeholder="Enter your email"
+                                        placeholder="Ingresa tu email"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 block">Phone</label>
+                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 block">Telefono</label>
                                 <div className="flex items-center gap-3 bg-black/50 border border-[#333] focus-within:border-[#FFD700] p-4 transition-colors">
                                     <Phone className="w-5 h-5 text-[#666]" />
                                     <input
@@ -149,13 +173,13 @@ const Registration = () => {
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                         className="bg-transparent flex-1 text-white outline-none"
-                                        placeholder="Enter your phone number"
+                                        placeholder="Ingresa tu numero de telefono"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 block">Location</label>
+                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 block">Ubicacion</label>
                                 <div className="flex items-center gap-3 bg-black/50 border border-[#333] focus-within:border-[#FFD700] p-4 transition-colors">
                                     <MapPin className="w-5 h-5 text-[#666]" />
                                     <input
@@ -163,7 +187,7 @@ const Registration = () => {
                                         value={formData.location}
                                         onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                         className="bg-transparent flex-1 text-white outline-none"
-                                        placeholder="Enter your location"
+                                        placeholder="Ingresa tu ubicacion"
                                     />
                                 </div>
                             </div>
@@ -174,14 +198,25 @@ const Registration = () => {
                                 onClick={() => setStep(1)}
                                 className="flex-1 py-4 border border-[#333] text-gray-400 hover:text-white hover:border-white transition-all text-sm uppercase tracking-widest"
                             >
-                                Back
+                                Atras
                             </button>
+                            
+                            {userType === 'vendor' && (
+                                <button
+                                    onClick={handleSkip}
+                                    className="flex-1 py-4 border border-[#FFD700]/30 text-[#FFD700] hover:bg-[#FFD700]/10 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                                >
+                                    Saltar
+                                    <SkipForward className="w-4 h-4" />
+                                </button>
+                            )}
+                            
                             <button
                                 onClick={handleSubmit}
-                                disabled={!formData.fullName || (userType === 'vendor' && !formData.businessName)}
+                                disabled={userType === 'user' && !formData.fullName}
                                 className="flex-1 py-4 bg-[#FFD700] text-black font-bold text-sm uppercase tracking-widest hover:bg-[#B8860B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                Complete
+                                Completar
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
