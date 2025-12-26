@@ -7,11 +7,8 @@ import { Wallet, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const { login, connectWallet, loading, authenticated, user, ready, needsRegistration } = useAuth();
+    const { connectWallet, loading, authenticated, user, ready, needsRegistration } = useAuth();
     const navigate = useNavigate();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
 
     useEffect(() => {
         if (ready && authenticated && user) {
@@ -24,18 +21,6 @@ const Login = () => {
             }
         }
     }, [ready, authenticated, user, navigate, needsRegistration]);
-
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setError('');
-        const success = await login(username, password);
-        if (success) {
-            if (username === 'admin') navigate('/admin');
-            else navigate('/client');
-        } else {
-            setError('Invalid credentials');
-        }
-    };
 
     const handleWallet = async () => {
         await connectWallet();
@@ -85,72 +70,23 @@ const Login = () => {
                     <p className="text-[#FFD700] text-xs tracking-[0.6em] uppercase mt-3 font-light">Exclusive Access</p>
                 </div>
 
-                <form onSubmit={handleLogin} className="w-full space-y-8">
-                    <div className="space-y-6">
-                        <div className="group">
-                            <label className="text-[10px] text-[#FFD700] uppercase tracking-[0.2em] mb-2 block font-bold">Identity</label>
-                            <input
-                                type="text"
-                                placeholder="ENTER USERNAME"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="input-premium placeholder:text-gray-600 placeholder:text-sm"
-                            />
-                        </div>
-
-                        <div className="group">
-                            <label className="text-[10px] text-[#FFD700] uppercase tracking-[0.2em] mb-2 block font-bold">Passcode</label>
-                            <input
-                                type="password"
-                                placeholder="********"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="input-premium placeholder:text-gray-600 placeholder:text-sm"
-                            />
-                        </div>
-                    </div>
-
-                    {error && (
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-red-500 text-xs text-center uppercase tracking-wider font-bold"
-                        >
-                            {error}
-                        </motion.p>
-                    )}
-
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="btn-premium w-full flex items-center justify-center gap-4 mt-8"
-                        disabled={loading}
-                    >
-                        {loading ? 'AUTHENTICATING...' : (
-                            <>
-                                <span className="font-serif">ENTER PORTAL</span>
-                                <ArrowRight className="w-5 h-5" />
-                            </>
-                        )}
-                    </motion.button>
-                </form>
-
-                <div className="w-full my-10 flex items-center gap-6 opacity-30">
-                    <div className="h-[1px] flex-1 bg-[#FFD700]" />
-                    <span className="text-[10px] font-mono text-[#FFD700]">*</span>
-                    <div className="h-[1px] flex-1 bg-[#FFD700]" />
-                </div>
-
                 <motion.button
                     onClick={handleWallet}
-                    whileHover={{ borderColor: '#FFD700', color: '#FFD700' }}
-                    className="w-full py-4 border border-[#333] hover:bg-[#111] transition-all flex items-center justify-center gap-3 text-sm text-gray-500 uppercase tracking-[0.2em]"
+                    disabled={loading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="btn-premium w-full flex items-center justify-center gap-4"
                 >
-                    <Wallet className="w-4 h-4" />
-                    Connect with Privy
+                    {loading ? 'CONNECTING...' : (
+                        <>
+                            <Wallet className="w-5 h-5" />
+                            <span className="font-serif">ENTER PORTAL</span>
+                            <ArrowRight className="w-5 h-5" />
+                        </>
+                    )}
                 </motion.button>
 
-                <p className="text-[10px] text-gray-600 mt-4 text-center">
+                <p className="text-[10px] text-gray-500 mt-6 text-center tracking-widest uppercase">
                     Email, Wallet, or Social Login
                 </p>
             </motion.div>

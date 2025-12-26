@@ -5,22 +5,7 @@ const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
-const REGISTERED_WALLETS_KEY = 'chainticket_registered_wallets';
-
-const getRegisteredWallets = () => {
-    try {
-        const data = localStorage.getItem(REGISTERED_WALLETS_KEY);
-        return data ? JSON.parse(data) : {};
-    } catch {
-        return {};
-    }
-};
-
-const saveRegisteredWallet = (walletAddress, userData) => {
-    const wallets = getRegisteredWallets();
-    wallets[walletAddress] = userData;
-    localStorage.setItem(REGISTERED_WALLETS_KEY, JSON.stringify(wallets));
-};
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const AuthProvider = ({ children }) => {
     const { ready, authenticated, user: privyUser, login: privyLogin, logout: privyLogout } = usePrivy();
@@ -29,108 +14,145 @@ export const AuthProvider = ({ children }) => {
     const [needsRegistration, setNeedsRegistration] = useState(false);
 
     useEffect(() => {
-        if (ready) {
-            setLoading(false);
-            if (authenticated && privyUser) {
-                const walletAddress = privyUser.wallet?.address || null;
-                const registeredWallets = getRegisteredWallets();
-                const existingUser = walletAddress ? registeredWallets[walletAddress] : null;
-
-                if (existingUser) {
-                    setUser({
-                        role: existingUser.userType === 'vendor' ? 'admin' : 'client',
-                        userType: existingUser.userType,
-                        name: existingUser.profile?.fullName || privyUser.wallet?.address?.slice(0, 10) || 'User',
-                        wallet: walletAddress,
-                        privyId: privyUser.id,
-                        profile: existingUser.profile,
-                        isRegistered: true
-                    });
-                    setNeedsRegistration(false);
+        const checkUserInDatabase = async () => {
+            if (ready) {
+                setLoading(false);
+                if (authenticated && privyUser) {
+                    const privyId = privyUser.id;
+                    const walletAddress = privyUser.wallet?.address || null;
+                    
+                    try {
+                        const response = await fetch(`${API_URL}/api/users/${privyId}`);
+                        const data = await response.json();
+                        
+                        if (data.found && data.user) {
+                            const dbUser = data.user;
+                            setUser({
+                                role: dbUser.user_type === 'vendor' ? 'admin' : 'client',
+                                userType: dbUser.user_type,
+                                name: dbUser.full_name || privyUser.email?.address || walletAddress?.slice(0, 10) || 'User',
+                                wallet: walletAddress,
+                                privyId: privyId,
+                                profile: {
+                                    fullName: dbUser.full_name,
+                                    email: dbUser.email,
+                                    phone: dbUser.phone,
+                                    location: dbUser.location,
+                                    businessName: dbUser.business_name
+                                },
+                                isRegistered: true,
+                                profileComplete: dbUser.profile_complete
+                            });
+                            setNeedsRegistration(false);
+                        } else {
+                            setUser({
+                                role: 'client',
+                                name: privyUser.email?.address || walletAddress?.slice(0, 10) || 'User',
+                                wallet: walletAddress,
+                                privyId: privyId,
+                                isRegistered: false
+                            });
+                            setNeedsRegistration(true);
+                        }
+                    } catch (error) {
+                        console.error('Error checking user in database:', error);
+                        setUser({
+                            role: 'client',
+                            name: privyUser.email?.address || walletAddress?.slice(0, 10) || 'User',
+                            wallet: walletAddress,
+                            privyId: privyId,
+                            isRegistered: false
+                        });
+                        setNeedsRegistration(true);
+                    }
                 } else {
-                    setUser({
-                        role: 'client',
-                        name: privyUser.email?.address || privyUser.wallet?.address?.slice(0, 10) || 'User',
-                        wallet: walletAddress,
-                        privyId: privyUser.id,
-                        isRegistered: false
-                    });
-                    setNeedsRegistration(true);
+                    setUser(null);
+                    setNeedsRegistration(false);
                 }
-            } else {
-                setUser(null);
-                setNeedsRegistration(false);
             }
-        }
+        };
+
+        checkUserInDatabase();
     }, [ready, authenticated, privyUser]);
-
-    const login = async (username, password) => {
-        setLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        if (username === 'admin' && password === '123') {
-            setUser({ role: 'admin', name: 'Admin User', isRegistered: true, userType: 'vendor' });
-            setLoading(false);
-            return true;
-        }
-
-        if (username === 'user' && password === '123') {
-            setUser({ role: 'client', name: 'Client User', isRegistered: true, userType: 'user' });
-            setLoading(false);
-            return true;
-        }
-
-        setLoading(false);
-        return false;
-    };
 
     const connectWallet = async () => {
         privyLogin();
     };
 
     const completeRegistration = async (userType, profileData) => {
+        const privyId = user?.privyId;
         const walletAddress = user?.wallet;
-        if (!walletAddress) return false;
+        
+        if (!privyId) return false;
 
-        const userData = {
-            userType,
-            profile: profileData,
-            registeredAt: Date.now()
-        };
+        try {
+            const response = await fetch(`${API_URL}/api/users`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    privyId,
+                    walletAddress,
+                    userType,
+                    profile: profileData
+                }),
+            });
 
-        saveRegisteredWallet(walletAddress, userData);
+            const data = await response.json();
+            
+            if (data.success) {
+                setUser(prev => ({
+                    ...prev,
+                    role: userType === 'vendor' ? 'admin' : 'client',
+                    userType,
+                    profile: profileData,
+                    isRegistered: true,
+                    profileComplete: profileData.fullName ? true : false,
+                    name: profileData.fullName || prev?.name
+                }));
 
-        setUser(prev => ({
-            ...prev,
-            role: userType === 'vendor' ? 'admin' : 'client',
-            userType,
-            profile: profileData,
-            isRegistered: true,
-            name: profileData.fullName || prev?.name
-        }));
-
-        setNeedsRegistration(false);
-        return true;
+                setNeedsRegistration(false);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error completing registration:', error);
+            return false;
+        }
     };
 
-    const updateUserProfile = (profileData) => {
-        const walletAddress = user?.wallet;
-        if (walletAddress) {
-            const registeredWallets = getRegisteredWallets();
-            if (registeredWallets[walletAddress]) {
-                registeredWallets[walletAddress].profile = {
-                    ...registeredWallets[walletAddress].profile,
-                    ...profileData
-                };
-                localStorage.setItem(REGISTERED_WALLETS_KEY, JSON.stringify(registeredWallets));
-            }
-        }
+    const updateUserProfile = async (profileData) => {
+        const privyId = user?.privyId;
+        if (!privyId) return false;
 
-        setUser(prev => ({
-            ...prev,
-            profile: { ...prev?.profile, ...profileData },
-            name: profileData.fullName || prev?.name
-        }));
+        try {
+            const response = await fetch(`${API_URL}/api/users/${privyId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    profile: profileData
+                }),
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                setUser(prev => ({
+                    ...prev,
+                    profile: { ...prev?.profile, ...profileData },
+                    name: profileData.fullName || prev?.name,
+                    profileComplete: profileData.fullName ? true : prev?.profileComplete
+                }));
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            return false;
+        }
     };
 
     const logout = async () => {
@@ -144,7 +166,6 @@ export const AuthProvider = ({ children }) => {
     return (
         <AuthContext.Provider value={{
             user,
-            login,
             logout,
             connectWallet,
             loading,
