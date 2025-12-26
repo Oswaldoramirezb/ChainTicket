@@ -428,13 +428,39 @@ app.post('/api/orders', async (req, res) => {
     
     const order = orderResult.rows[0];
     
-    // Create order items and update service sold counts
+    // Create order items, tickets with QR codes, and update service sold counts
+    const createdTickets = [];
+    
     for (const item of items) {
-      await pool.query(
+      // Create order item
+      const orderItemResult = await pool.query(
         `INSERT INTO order_items (order_id, service_id, service_name, quantity, avg_time, price)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id`,
         [order.id, item.serviceId, item.serviceName, item.quantity, item.avgTime, item.price || 0]
       );
+      
+      const orderItemId = orderItemResult.rows[0].id;
+      
+      // Generate tickets with QR codes for each quantity
+      for (let i = 0; i < item.quantity; i++) {
+        const ticketNumber = `TKT-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const qrHash = crypto.createHash('sha256')
+          .update(`${ticketNumber}-${userPrivyId}-${item.serviceId}-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`)
+          .digest('hex');
+        
+        const ticketResult = await pool.query(
+          `INSERT INTO tickets (order_item_id, user_privy_id, service_id, ticket_number, qr_hash, status, vendor_id)
+           VALUES ($1, $2, $3, $4, $5, 'active', $6)
+           RETURNING *`,
+          [orderItemId, userPrivyId, item.serviceId, ticketNumber, qrHash, vendorId]
+        );
+        
+        createdTickets.push({
+          ...ticketResult.rows[0],
+          serviceName: item.serviceName
+        });
+      }
       
       // Update sold count
       await pool.query(
@@ -446,6 +472,7 @@ app.post('/api/orders', async (req, res) => {
     res.json({ 
       success: true, 
       order: { ...order, items },
+      tickets: createdTickets,
       queuePosition,
       estimatedWait
     });
