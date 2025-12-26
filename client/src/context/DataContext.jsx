@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 
 const DataContext = createContext();
 
@@ -46,12 +46,13 @@ export const DataProvider = ({ children }) => {
         setServices(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
     };
 
-    const addService = (newService) => {
+    const addService = (newService, isGuest = false) => {
         setServices(prev => [...prev, { 
             ...newService, 
             id: Date.now(), 
             sold: 0, 
-            isActive: true,
+            isActive: isGuest ? false : true,
+            isGuestCreated: isGuest,
             schedule: newService.schedule || { openTime: '09:00', closeTime: '18:00', days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] }
         }]);
     };
@@ -60,8 +61,13 @@ export const DataProvider = ({ children }) => {
         setServices(prev => prev.filter(s => s.id !== id));
     };
 
-    const toggleServiceActive = (id) => {
+    const toggleServiceActive = (id, isGuest = false) => {
+        if (isGuest) {
+            console.warn('Guests cannot activate services. Please sign in first.');
+            return false;
+        }
         setServices(prev => prev.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s));
+        return true;
     };
 
     const addToCart = (serviceId) => {

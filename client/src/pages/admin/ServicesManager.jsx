@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Check, X, Clock, Package, Trash2, Power, Calendar, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Check, X, Clock, Package, Trash2, Power, Calendar, AlertTriangle, Lock } from 'lucide-react';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const ServicesManager = () => {
     const { services, updateService, addService, deleteService, toggleServiceActive } = useData();
+    const { isGuest, connectWallet } = useAuth();
     const [editingId, setEditingId] = useState(null);
     const [newServiceMode, setNewServiceMode] = useState(false);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
@@ -45,7 +47,7 @@ const ServicesManager = () => {
             avgTime: Number(formData.avgTime),
             totalStock: Number(formData.totalStock),
             schedule: formData.schedule
-        });
+        }, isGuest);
         setNewServiceMode(false);
         setFormData({ title: '', image: '', avgTime: '', totalStock: '', schedule: { openTime: '09:00', closeTime: '18:00', days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] } });
     };
@@ -66,6 +68,28 @@ const ServicesManager = () => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-20">
+            {isGuest && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-center justify-between"
+                >
+                    <div className="flex items-center gap-3">
+                        <Lock className="w-5 h-5 text-yellow-400" />
+                        <div>
+                            <p className="text-yellow-400 font-medium">Guest Preview Mode</p>
+                            <p className="text-sm text-gray-400">You can create services but cannot activate them until you sign in.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={connectWallet}
+                        className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-sm transition-colors"
+                    >
+                        Sign In
+                    </button>
+                </motion.div>
+            )}
+
             <div className="flex justify-between items-center">
                 <h2 className="text-3xl font-bold text-white">My Services</h2>
                 <button
@@ -276,13 +300,23 @@ const ServicesManager = () => {
                                         <div className="flex justify-between items-start mb-2">
                                             <h3 className="text-2xl font-bold">{service.title}</h3>
                                             <div className="flex gap-2">
-                                                <button 
-                                                    onClick={() => toggleServiceActive(service.id)} 
-                                                    className={`p-2 rounded-full transition-colors ${service.isActive ? 'hover:bg-green-500/20 text-green-400' : 'hover:bg-red-500/20 text-red-400'}`}
-                                                    title={service.isActive ? 'Deactivate' : 'Activate'}
-                                                >
-                                                    <Power className="w-5 h-5" />
-                                                </button>
+                                                {isGuest ? (
+                                                    <button 
+                                                        onClick={connectWallet}
+                                                        className="p-2 rounded-full transition-colors hover:bg-yellow-500/20 text-yellow-400"
+                                                        title="Sign in to activate services"
+                                                    >
+                                                        <Lock className="w-5 h-5" />
+                                                    </button>
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => toggleServiceActive(service.id, isGuest)} 
+                                                        className={`p-2 rounded-full transition-colors ${service.isActive ? 'hover:bg-green-500/20 text-green-400' : 'hover:bg-red-500/20 text-red-400'}`}
+                                                        title={service.isActive ? 'Deactivate' : 'Activate'}
+                                                    >
+                                                        <Power className="w-5 h-5" />
+                                                    </button>
+                                                )}
                                                 <button onClick={() => handleEdit(service)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                                                     <Edit2 className="w-5 h-5 text-gray-400" />
                                                 </button>
