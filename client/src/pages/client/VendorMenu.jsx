@@ -1,12 +1,14 @@
 import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Plus, ShoppingCart, ArrowLeft, Users, Ticket, Timer, CheckCircle } from 'lucide-react';
+import { Clock, Plus, ShoppingCart, ArrowLeft, Users, Ticket, Timer, CheckCircle, LogIn } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 
 const VendorMenu = () => {
     const { vendorId } = useParams();
     const { vendors, services, cart, addToCart, purchaseDirectly, joinQueue, getQueueStatus, orders } = useData();
+    const { isGuest, connectWallet } = useAuth();
     const navigate = useNavigate();
     const [queueTime, setQueueTime] = useState(null);
     const [queuePosition, setQueuePosition] = useState(null);
@@ -15,6 +17,7 @@ const VendorMenu = () => {
     const [joining, setJoining] = useState(false);
     const [purchasing, setPurchasing] = useState(null);
     const [purchaseSuccess, setPurchaseSuccess] = useState(null);
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
     const vendor = vendors.find(v => v.id === parseInt(vendorId));
     const vendorServices = services.filter(s => s.vendorId === parseInt(vendorId));
@@ -72,6 +75,10 @@ const VendorMenu = () => {
     if (!vendor) return <div className="text-white p-10">Vendor not found</div>;
 
     const handleJoinQueue = async () => {
+        if (isGuest) {
+            setShowLoginPrompt(true);
+            return;
+        }
         setJoining(true);
         const result = await joinQueue(vendor.id);
         if (result && result.order) {
@@ -81,6 +88,11 @@ const VendorMenu = () => {
             setQueueTime(result.estimatedWait);
         }
         setJoining(false);
+    };
+
+    const handleLogin = () => {
+        setShowLoginPrompt(false);
+        connectWallet();
     };
 
     if (vendorType === 'supermarket') {
@@ -154,11 +166,50 @@ const VendorMenu = () => {
                         </motion.div>
                     )}
                 </div>
+
+                {showLoginPrompt && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowLoginPrompt(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            onClick={e => e.stopPropagation()}
+                            className="bg-[#0a0a0a] border border-[#FFD700]/30 p-8 max-w-md w-full text-center"
+                        >
+                            <LogIn className="w-16 h-16 text-[#FFD700] mx-auto mb-6" />
+                            <h3 className="text-2xl font-serif text-white mb-4">Login Required</h3>
+                            <p className="text-gray-400 mb-6">
+                                Please sign in to join the queue and get your digital pass.
+                            </p>
+                            <button
+                                onClick={handleLogin}
+                                className="w-full bg-[#FFD700] text-black py-4 text-sm tracking-[0.3em] font-bold uppercase hover:bg-white transition-colors flex items-center justify-center gap-2"
+                            >
+                                <LogIn className="w-5 h-5" />
+                                Sign In / Register
+                            </button>
+                            <button
+                                onClick={() => setShowLoginPrompt(false)}
+                                className="w-full mt-3 text-gray-500 hover:text-white py-2 text-xs uppercase tracking-widest transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
             </div>
         );
     }
 
     const handleDirectPurchase = async (serviceId) => {
+        if (isGuest) {
+            setShowLoginPrompt(true);
+            return;
+        }
         setPurchasing(serviceId);
         const result = await purchaseDirectly(serviceId, parseInt(vendorId));
         setPurchasing(null);
@@ -166,6 +217,14 @@ const VendorMenu = () => {
             setPurchaseSuccess(serviceId);
             setTimeout(() => setPurchaseSuccess(null), 3000);
         }
+    };
+
+    const handleAddToCart = (serviceId) => {
+        if (isGuest) {
+            setShowLoginPrompt(true);
+            return;
+        }
+        addToCart(serviceId);
     };
 
     const buttonText = usesCart ? 'Add to Cart' : 'Get Ticket';
@@ -251,7 +310,7 @@ const VendorMenu = () => {
                                 </div>
                             ) : (
                                 <button
-                                    onClick={() => usesCart ? addToCart(service.id) : handleDirectPurchase(service.id)}
+                                    onClick={() => usesCart ? handleAddToCart(service.id) : handleDirectPurchase(service.id)}
                                     disabled={service.totalStock - service.sold <= 0 || purchasing === service.id}
                                     className="w-full bg-[#FFD700] text-black py-3 text-xs tracking-[0.3em] font-bold uppercase hover:bg-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
@@ -264,6 +323,41 @@ const VendorMenu = () => {
                     </motion.div>
                 ))}
             </div>
+
+            {showLoginPrompt && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+                    onClick={() => setShowLoginPrompt(false)}
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        onClick={e => e.stopPropagation()}
+                        className="bg-[#0a0a0a] border border-[#FFD700]/30 p-8 max-w-md w-full text-center"
+                    >
+                        <LogIn className="w-16 h-16 text-[#FFD700] mx-auto mb-6" />
+                        <h3 className="text-2xl font-serif text-white mb-4">Login Required</h3>
+                        <p className="text-gray-400 mb-6">
+                            Please sign in to purchase tickets and access your digital passes.
+                        </p>
+                        <button
+                            onClick={handleLogin}
+                            className="w-full bg-[#FFD700] text-black py-4 text-sm tracking-[0.3em] font-bold uppercase hover:bg-white transition-colors flex items-center justify-center gap-2"
+                        >
+                            <LogIn className="w-5 h-5" />
+                            Sign In / Register
+                        </button>
+                        <button
+                            onClick={() => setShowLoginPrompt(false)}
+                            className="w-full mt-3 text-gray-500 hover:text-white py-2 text-xs uppercase tracking-widest transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </motion.div>
+                </motion.div>
+            )}
         </div>
     );
 };
