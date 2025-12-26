@@ -167,6 +167,25 @@ export const DataProvider = ({ children }) => {
         }
     }, []);
 
+    // Update vendor settings (uses_cart, etc.)
+    const updateVendorSettings = async (vendorId, settings) => {
+        try {
+            const response = await fetch(`${API_URL}/api/vendors/${vendorId}/settings`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            const data = await response.json();
+            if (data.success) {
+                await fetchVendors();
+                return true;
+            }
+        } catch (error) {
+            console.error('Error updating vendor settings:', error);
+        }
+        return false;
+    };
+
     // Load initial data
     useEffect(() => {
         const loadData = async () => {
@@ -319,6 +338,51 @@ export const DataProvider = ({ children }) => {
 
     const clearCart = () => setCart([]);
 
+    // Purchase a single ticket directly (no cart)
+    const purchaseDirectly = async (serviceId, vendorId) => {
+        if (!user?.privyId) return null;
+        const service = services.find(s => s.id === serviceId);
+        if (!service || service.sold >= service.totalStock || !service.isActive) return null;
+
+        try {
+            const items = [{
+                serviceId,
+                serviceName: service.title,
+                quantity: 1,
+                avgTime: service.avgTime,
+                price: service.price || 0
+            }];
+
+            const response = await fetch(`${API_URL}/api/orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userPrivyId: user.privyId,
+                    vendorId,
+                    items
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                await fetchMyOrders();
+                await fetchServices(true);
+                await fetchQueueInfo();
+                return {
+                    id: data.order.order_number,
+                    dbId: data.order.id,
+                    items,
+                    status: 'pending',
+                    estimatedWait: data.estimatedWait,
+                    queuePosition: data.queuePosition
+                };
+            }
+        } catch (error) {
+            console.error('Error purchasing directly:', error);
+        }
+        return null;
+    };
+
     // Create order from cart
     const createOrderFromCart = async () => {
         if (cart.length === 0 || !user?.privyId) return null;
@@ -435,6 +499,7 @@ export const DataProvider = ({ children }) => {
             fetchVendorOrders,
             fetchMyTickets,
             fetchQueueInfo,
+            updateVendorSettings,
             updateService,
             addService,
             deleteService,
@@ -443,6 +508,7 @@ export const DataProvider = ({ children }) => {
             removeFromCart,
             updateCartQuantity,
             clearCart,
+            purchaseDirectly,
             createOrderFromCart,
             updateOrderStatus,
             setOrders,
