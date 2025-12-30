@@ -40,49 +40,44 @@ output "backend_user_arn" {
   value       = aws_iam_user.backend_user.arn
 }
 
-# Outputs útiles para configurar en Amplify
-output "amplify_env_vars" {
-  description = "Environment variables to set in AWS Amplify"
-  value = <<-EOT
-  
-  ============================================
-  🔧 CONFIGURA EN AMPLIFY CONSOLE:
-  ============================================
-  
-  Ve a: Amplify > Tu App > Hosting > Environment variables
-  
-  AWS_REGION=${var.aws_region}
-  DYNAMODB_TABLE_BUSINESS_METRICS=${aws_dynamodb_table.business_metrics.name}
-  DYNAMODB_TABLE_SALES_HISTORY=${aws_dynamodb_table.sales_history.name}
-  DYNAMODB_TABLE_AI_CONVERSATIONS=${aws_dynamodb_table.ai_conversations.name}
-  BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
-  
-  ⚠️  Para AWS_ACCESS_KEY_ID y AWS_SECRET_ACCESS_KEY:
-  Amplify puede usar IAM Role en lugar de credenciales estáticas.
-  Ver output "amplify_service_role_config" para configuración recomendada.
-  
-  EOT
+# ===== Amplify Outputs =====
+
+output "amplify_app_id" {
+  description = "Amplify App ID"
+  value       = aws_amplify_app.chainticket.id
 }
 
-output "amplify_service_role_config" {
-  description = "IAM configuration for Amplify service role"
-  value = <<-EOT
+output "amplify_default_domain" {
+  description = "Amplify default domain URL"
+  value       = "https://${aws_amplify_branch.main.branch_name}.${aws_amplify_app.chainticket.default_domain}"
+}
+
+output "amplify_app_url" {
+  description = "Amplify App URL"
+  value       = aws_amplify_app.chainticket.default_domain
+}
+
+output "amplify_instructions" {
+  description = "Next steps for Amplify"
+  value       = <<-EOT
   
-  ============================================
-  🔐 OPCIÓN RECOMENDADA: IAM Role para Amplify
-  ============================================
+  ✅ AMPLIFY CONFIGURADO
   
-  En lugar de usar Access Keys, configura el Service Role de Amplify
-  para que tenga permisos a DynamoDB y Bedrock.
+  App URL: https://${aws_amplify_branch.main.branch_name}.${aws_amplify_app.chainticket.default_domain}
+  App ID:  ${aws_amplify_app.chainticket.id}
   
-  1. Ve a Amplify > Tu App > App settings > General
-  2. En "Service role", selecciona o crea un rol
-  3. Agrega estas policies al rol:
-     - ${aws_iam_role_policy.dynamodb_access_policy.name}
-     - ${aws_iam_role_policy.bedrock_invoke_policy.name}
+  PRÓXIMOS PASOS:
+  1. Push código a GitHub rama '${var.git_branch}'
+  2. Amplify detectará el push y hará build automático
+  3. Esperar ~5 minutos para primer deploy
+  4. Verificar en: https://console.aws.amazon.com/amplify/home#${aws_amplify_app.chainticket.id}
   
-  O usa el ARN del rol que creamos:
-  ${aws_iam_role.bedrock_invoker.arn}
+  VARIABLES DE ENTORNO ya configuradas:
+  - VITE_MOVEMENT_RPC_URL
+  - VITE_MOVEMENT_INDEXER_URL
+  - VITE_CONTRACT_ADDRESS
+  - VITE_PRIVY_APP_ID
+  - VITE_API_URL
   
   EOT
 }
