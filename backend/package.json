@@ -13,6 +13,7 @@
     "@aws-sdk/client-dynamodb": "^3.958.0",
     "@aws-sdk/lib-dynamodb": "^3.958.0",
     "@coinbase/x402": "^2.1.0",
+    "@vendia/serverless-express": "^4.12.6",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
