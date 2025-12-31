@@ -70,3 +70,16 @@ variable "custom_domain" {
   type        = string
   default     = ""
 }
+
+variable "privy_app_secret" {
+  description = "Privy App Secret (sensitive)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "payment_receiver_address" {
+  description = "Wallet address to receive x402 payments"
+  type        = string
+  default     = ""
+}

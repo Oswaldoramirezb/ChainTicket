@@ -81,3 +81,13 @@ output "amplify_instructions" {
   
   EOT
 }
+
+output "api_gateway_url" {
+  description = "URL of the API Gateway"
+  value       = aws_apigatewayv2_api.backend.api_endpoint
+}
+
+output "lambda_function_name" {
+  description = "Name of the Lambda function"
+  value       = aws_lambda_function.backend_api.function_name
+}
