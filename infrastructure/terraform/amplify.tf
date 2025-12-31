@@ -7,17 +7,28 @@ resource "aws_amplify_app" "chainticket" {
   repository   = var.github_repo_url
   access_token = var.github_access_token
 
+<<<<<<< Updated upstream
   # Build settings para Vite + React
     build_spec = <<-EOT
+=======
+  build_spec = <<-EOT
+>>>>>>> Stashed changes
     version: 1
     frontend:
       phases:
         preBuild:
           commands:
+<<<<<<< Updated upstream
             - cd client && npm ci --cache .npm --prefer-offline
         build:
           commands:
             - cd client && npm run build
+=======
+            - npm ci --cache .npm --prefer-offline --prefix client
+        build:
+          commands:
+            - npm run build --prefix client
+>>>>>>> Stashed changes
       artifacts:
         baseDirectory: client/dist
         files:
@@ -27,7 +38,7 @@ resource "aws_amplify_app" "chainticket" {
           - 'client/node_modules/**/*'
   EOT
 
-  # ⚠️ CRÍTICO: Rewrite rules para SPA (React Router)
+  # Rewrite rules para SPA
   custom_rule {
     source = "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>"
     status = "200"
@@ -40,31 +51,13 @@ resource "aws_amplify_app" "chainticket" {
     target = "/index.html"
   }
 
-  # Variables de entorno del FRONTEND (Vite requiere prefijo VITE_)
-  environment_variables = {
-    # Movement Network
-    VITE_MOVEMENT_RPC_URL     = "https://aptos.testnet.porto.movementlabs.xyz/v1"
-    VITE_MOVEMENT_INDEXER_URL = "https://indexer.testnet.porto.movementnetwork.xyz/v1/graphql"
-    VITE_CONTRACT_ADDRESS     = "0x0a10dde9540e854e79445a37ed6636086128cfc4d13638077e983a14a4398056"
-
-    # Privy
-    VITE_PRIVY_APP_ID = var.privy_app_id
-
-    # API Backend
-    VITE_API_URL = var.backend_api_url
-
-    # Build optimization
-    NODE_OPTIONS = "--max-old-space-size=4096"
-    NODE_ENV     = "production"
-  }
-
-  iam_service_role_arn = aws_iam_role.amplify_service_role.arn
+  # ⚠️ SIN service role - igual que el de consola
+  # iam_service_role_arn = aws_iam_role.amplify_service_role.arn  # COMENTADO
 
   enable_auto_branch_creation = false
   enable_branch_auto_build    = true
   enable_branch_auto_deletion = false
 
-  # Platform para apps basadas en web
   platform = "WEB"
 
   tags = {
@@ -73,6 +66,7 @@ resource "aws_amplify_app" "chainticket" {
     ManagedBy   = "Terraform"
   }
 }
+
 
 # ==================================================
 # Amplify Branch (main)
@@ -83,9 +77,7 @@ resource "aws_amplify_branch" "main" {
   branch_name = var.git_branch
 
   enable_auto_build = true
-
-  # Framework para optimizaciones
-  framework = "React"
+  framework         = "React"
 
   environment_variables = {
     ENV = var.environment
