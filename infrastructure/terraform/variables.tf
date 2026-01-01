@@ -95,3 +95,14 @@ variable "the_bucket_path" {
   type        = string
   default     = "ChainTicket/"
 }
+variable "github_owner" {
+  description = "GitHub username or organization"
+  type        = string
+  default     = "duedme"
+}
+
+variable "github_repo" {
+  description = "GitHub repository name"
+  type        = string
+  default     = "ChainTicket"
+}
