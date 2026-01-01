@@ -17,6 +17,9 @@ data "aws_ami" "amazon_linux" {
     values = ["hvm"]
   }
 }
+data "aws_key_pair" "existing" {
+  key_name = "theGraph"
+}
 
 # Security Group
 resource "aws_security_group" "backend" {
@@ -143,6 +146,7 @@ resource "aws_iam_instance_profile" "backend" {
 resource "aws_instance" "backend" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = "t3.micro"
+  key_name               = data.aws_key_pair.existing.key_name
   iam_instance_profile   = aws_iam_instance_profile.backend.name
   vpc_security_group_ids = [aws_security_group.backend.id]
 
