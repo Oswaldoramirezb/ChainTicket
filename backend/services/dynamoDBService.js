@@ -17,13 +17,20 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 
 // Configuración del cliente
-const client = new DynamoDBClient({
+// En EC2 usa el IAM Role automáticamente, en local usa variables de entorno
+const clientConfig = {
   region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
+};
+
+// Solo agregar credenciales si están definidas (para desarrollo local)
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  clientConfig.credentials = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
+  };
+}
+
+const client = new DynamoDBClient(clientConfig);
 
 const docClient = DynamoDBDocumentClient.from(client, {
   marshallOptions: { removeUndefinedValues: true },
