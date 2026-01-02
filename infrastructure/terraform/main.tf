@@ -229,7 +229,7 @@ resource "aws_dynamodb_table" "app_data" {
 
   tags = {
     Name    = "App Data Table"
-    Purpose = "Users, Vendors, Services, Orders, Tickets"
+    Purpose = "App-Data-Storage"
   }
 }
 
