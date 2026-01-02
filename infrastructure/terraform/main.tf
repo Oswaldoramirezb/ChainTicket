@@ -173,6 +173,66 @@ resource "aws_dynamodb_table" "ai_conversations" {
   }
 }
 
+# Tabla principal de datos de la aplicación (Single-Table Design)
+resource "aws_dynamodb_table" "app_data" {
+  name         = "${var.project_name}-app-data-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key  = "pk" # USER#<id>, VENDOR#<id>, SERVICE#<id>, ORDER#<id>, TICKET#<id>
+  range_key = "sk" # PROFILE, META, or related entity keys
+
+  attribute {
+    name = "pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "S"
+  }
+
+  # GSI1: Para buscar por tipo de entidad
+  attribute {
+    name = "gsi1pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi1sk"
+    type = "S"
+  }
+
+  # GSI2: Para buscar por owner/vendor
+  attribute {
+    name = "gsi2pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi2sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "GSI1"
+    hash_key        = "gsi1pk"
+    range_key       = "gsi1sk"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "GSI2"
+    hash_key        = "gsi2pk"
+    range_key       = "gsi2sk"
+    projection_type = "ALL"
+  }
+
+  tags = {
+    Name    = "App Data Table"
+    Purpose = "Users, Vendors, Services, Orders, Tickets"
+  }
+}
+
 # ============================================
 # IAM ROLE PARA BEDROCK (Simplificado para Amplify)
 # ============================================
@@ -265,7 +325,9 @@ resource "aws_iam_role_policy" "dynamodb_access_policy" {
           aws_dynamodb_table.sales_history.arn,
           "${aws_dynamodb_table.sales_history.arn}/index/*",
           aws_dynamodb_table.ai_conversations.arn,
-          "${aws_dynamodb_table.ai_conversations.arn}/index/*"
+          "${aws_dynamodb_table.ai_conversations.arn}/index/*",
+          aws_dynamodb_table.app_data.arn,
+          "${aws_dynamodb_table.app_data.arn}/index/*"
         ]
       }
     ]
@@ -316,7 +378,9 @@ resource "aws_iam_user_policy" "backend_user_policy" {
           aws_dynamodb_table.sales_history.arn,
           "${aws_dynamodb_table.sales_history.arn}/index/*",
           aws_dynamodb_table.ai_conversations.arn,
-          "${aws_dynamodb_table.ai_conversations.arn}/index/*"
+          "${aws_dynamodb_table.ai_conversations.arn}/index/*",
+          aws_dynamodb_table.app_data.arn,
+          "${aws_dynamodb_table.app_data.arn}/index/*"
         ]
       },
       {
@@ -365,7 +429,9 @@ resource "aws_iam_policy" "amplify_backend_policy" {
           aws_dynamodb_table.sales_history.arn,
           "${aws_dynamodb_table.sales_history.arn}/index/*",
           aws_dynamodb_table.ai_conversations.arn,
-          "${aws_dynamodb_table.ai_conversations.arn}/index/*"
+          "${aws_dynamodb_table.ai_conversations.arn}/index/*",
+          aws_dynamodb_table.app_data.arn,
+          "${aws_dynamodb_table.app_data.arn}/index/*"
         ]
       },
       {

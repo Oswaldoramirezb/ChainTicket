@@ -18,6 +18,10 @@ output "dynamodb_tables" {
       name = aws_dynamodb_table.ai_conversations.name
       arn  = aws_dynamodb_table.ai_conversations.arn
     }
+    app_data = {
+      name = aws_dynamodb_table.app_data.name
+      arn  = aws_dynamodb_table.app_data.arn
+    }
   }
 }
 
