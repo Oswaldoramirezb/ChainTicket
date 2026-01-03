@@ -152,7 +152,6 @@ resource "aws_instance" "backend" {
   iam_instance_profile   = aws_iam_instance_profile.backend.name
   vpc_security_group_ids = [aws_security_group.backend.id]
 
-  # User data - instala Node.js y clona el repo
   user_data = <<-EOF
     #!/bin/bash
     set -e
@@ -162,7 +161,7 @@ resource "aws_instance" "backend" {
     
     dnf update -y
     
-    # Node.js 20 via NodeSource (funciona en AL2023)
+    # Node.js 20 via NodeSource
     curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
     dnf install -y nodejs git
     
@@ -177,42 +176,59 @@ resource "aws_instance" "backend" {
     npm ci --omit=dev
     
     cat > .env << 'ENVFILE'
-    PORT=3001
-    AWS_REGION=${var.aws_region}
-    NODE_ENV=production
-    ENVFILE
+PORT=3001
+NODE_ENV=development
+AWS_REGION=${var.aws_region}
+
+# Movement Network
+MOVEMENT_RPC_URL=https://aptos.testnet.porto.movementlabs.xyz/v1
+MOVEMENT_INDEXER_URL=https://indexer.testnet.porto.movementnetwork.xyz/v1/graphql
+#CONTRACT_MODULE_ADDRESS=""
+
+# Payment - CONFIGURAR MANUALMENTE DESPUÉS
+# PAYMENT_PROCESSOR_PRIVATE_KEY=
+# PAYMENT_RECEIVER_ADDRESS=
+# BASE_RPC_URL=https://mainnet.base.org
+
+# DynamoDB
+DYNAMODB_TABLE_APP_DATA=${var.project_name}-app-data-${var.environment}
+DYNAMODB_TABLE_BUSINESS_METRICS=${var.project_name}-business-metrics-${var.environment}
+DYNAMODB_TABLE_SALES_HISTORY=${var.project_name}-sales-history-${var.environment}
+DYNAMODB_TABLE_AI_CONVERSATIONS=${var.project_name}-ai-conversations-${var.environment}
+
+# Bedrock
+BEDROCK_MODEL_ID=amazon.titan-text-express-v1:0
+ENVFILE
     
     cat > /etc/systemd/system/chainticket.service << 'SERVICE'
-    [Unit]
-    Description=ChainTicket Backend API
-    After=network.target
-    
-    [Service]
-    Type=simple
-    User=root
-    WorkingDirectory=/opt/chainticket/backend
-    ExecStart=/usr/bin/node server.js
-    Restart=on-failure
-    RestartSec=10
-    Environment=NODE_ENV=production
-    
-    [Install]
-    WantedBy=multi-user.target
-    SERVICE
+[Unit]
+Description=ChainTicket Backend API
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/chainticket/backend
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=10
+EnvironmentFile=/opt/chainticket/backend/.env
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
     
     systemctl daemon-reload
     systemctl enable chainticket
     systemctl start chainticket
     
     echo "User-data script completed!"
-    EOF
-
+  EOF
 
   tags = {
     Name = "${var.project_name}-backend-${var.environment}"
   }
 
-  # Para que se recree si cambia el user_data
   lifecycle {
     create_before_destroy = true
   }
