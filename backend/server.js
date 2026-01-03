@@ -4,7 +4,6 @@ import crypto from 'crypto';
 import aiRoutes from './routes/aiRoutes.js';
 import ticketPurchaseRoutes from './routes/ticketPurchase.js';
 import * as db from './services/dynamoDBService.js';
-import ticketPurchaseRoutes from './routes/ticketPurchase.js';
 
 const app = express();
 app.use(cors({
