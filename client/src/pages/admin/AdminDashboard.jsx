@@ -3,17 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, CheckCircle, User, Activity } from 'lucide-react';
 
 const AdminDashboard = () => {
-    const { orders, setOrders, services } = useData();
+    const { orders, services, updateOrderStatus } = useData();
 
     const getServiceInfo = (id) => services.find(s => s.id === id);
 
-    const advanceStatus = (orderId, currentStatus) => {
-        setOrders(prev => prev.map(o => {
-            if (o.id !== orderId) return o;
-            if (currentStatus === 'pending') return { ...o, status: 'ready' };
-            if (currentStatus === 'ready') return { ...o, status: 'completed' };
-            return o;
-        }));
+    const advanceStatus = async (order, currentStatus) => {
+        const newStatus = currentStatus === 'pending' ? 'ready' : 'completed';
+        // Use dbId (database ID) for the API call, fallback to id if dbId doesn't exist
+        await updateOrderStatus(order.dbId || order.id, newStatus);
     };
 
     const activeOrders = orders.filter(o => o.status !== 'completed').sort((a, b) => a.timestamp - b.timestamp);
@@ -72,7 +69,7 @@ const AdminDashboard = () => {
                                     <div className="pt-6 border-t border-[#222]">
                                         {order.status === 'pending' && (
                                             <button
-                                                onClick={() => advanceStatus(order.id, 'pending')}
+                                                onClick={() => advanceStatus(order, 'pending')}
                                                 className="w-full py-4 bg-[#FFD700] text-black font-bold text-xs uppercase tracking-[0.2em] hover:bg-white transition-colors flex items-center justify-center gap-3"
                                             >
                                                 <CheckCircle className="w-4 h-4" />
@@ -81,7 +78,7 @@ const AdminDashboard = () => {
                                         )}
                                         {order.status === 'ready' && (
                                             <button
-                                                onClick={() => advanceStatus(order.id, 'ready')}
+                                                onClick={() => advanceStatus(order, 'ready')}
                                                 className="w-full py-4 bg-[#111] text-green-500 border border-green-500/30 font-bold text-xs uppercase tracking-[0.2em] hover:bg-green-900/20 transition-colors flex items-center justify-center gap-3"
                                             >
                                                 <CheckCircle className="w-4 h-4" />
