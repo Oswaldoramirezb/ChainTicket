@@ -162,6 +162,15 @@ export async function updateVendorSettings(vendorId, settings) {
   return item;
 }
 
+export async function deleteVendor(vendorId) {
+  const command = new DeleteCommand({
+    TableName: TABLES.APP_DATA,
+    Key: { pk: `VENDOR#${vendorId}`, sk: 'META' },
+  });
+  await docClient.send(command);
+  return { success: true };
+}
+
 // ============================================
 // SERVICES
 // ============================================
