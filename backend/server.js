@@ -370,6 +370,16 @@ app.patch('/api/vendors/:id/settings', async (req, res) => {
   }
 });
 
+app.delete('/api/vendors/:id', async (req, res) => {
+  try {
+    await db.deleteVendor(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting vendor:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================
 // QUEUE ROUTES
 // ============================================
