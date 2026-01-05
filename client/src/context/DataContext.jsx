@@ -158,13 +158,28 @@ export const DataProvider = ({ children }) => {
     // Fetch vendors (establishments)
     const fetchVendors = useCallback(async () => {
         try {
-            const response = await fetch(`${API_URL}/api/vendors`);
+            const url = `${API_URL}/api/vendors`;
+            console.log('🔍 Fetching vendors from:', url);
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                console.error('❌ Response not OK:', response.status, response.statusText);
+                return;
+            }
+            
             const data = await response.json();
+            console.log('✅ Vendors data received:', data);
             if (data.vendors) {
+                console.log(`✅ Setting ${data.vendors.length} vendors`);
                 setVendors(data.vendors);
+            } else {
+                console.warn('⚠️ No vendors in response:', data);
             }
         } catch (error) {
-            console.error('Error fetching vendors:', error);
+            console.error('❌ Error fetching vendors:', error);
+            console.error('Error details:', error.message, error.stack);
+            // Set empty array on error to prevent infinite loading
+            setVendors([]);
         }
     }, []);
 
