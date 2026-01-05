@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Store, ArrowRight, Users, Utensils, Sparkles, ShoppingCart } from 'lucide-react';
 
 const VendorSelection = () => {
-    const { vendors } = useData();
+    const { vendors, loading } = useData();
     const navigate = useNavigate();
 
     const getVendorCTA = (vendor) => {
@@ -23,6 +23,39 @@ const VendorSelection = () => {
                 return { text: 'View Tickets', icon: ArrowRight };
         }
     };
+
+    if (loading) {
+        return (
+            <div className="pb-20 text-center">
+                <h2 className="text-4xl md:text-5xl font-bold font-serif text-gradient-gold tracking-widest uppercase">Select Establishment</h2>
+                <div className="w-[1px] h-16 bg-gradient-to-b from-[#FFD700] to-transparent mx-auto mt-6" />
+                <p className="text-gray-400 text-sm mt-4 tracking-widest uppercase">Loading...</p>
+            </div>
+        );
+    }
+
+    if (!vendors || vendors.length === 0) {
+        return (
+            <div className="pb-20">
+                <div className="mb-12 text-center">
+                    <h2 className="text-4xl md:text-5xl font-bold font-serif text-gradient-gold tracking-widest uppercase">Select Establishment</h2>
+                    <div className="w-[1px] h-16 bg-gradient-to-b from-[#FFD700] to-transparent mx-auto mt-6" />
+                    <p className="text-gray-400 text-sm mt-4 tracking-widest uppercase">Choose your premium destination</p>
+                </div>
+                <div className="max-w-2xl mx-auto text-center p-8 bg-[#050505] border border-[#222]">
+                    <p className="text-red-400 mb-4">⚠️ No se pudieron cargar los establecimientos</p>
+                    <p className="text-gray-400 text-sm mb-4">
+                        Por favor, abre la consola del navegador (F12) para ver los errores.
+                    </p>
+                    <p className="text-gray-500 text-xs">
+                        Si ves un error de "Mixed Content", el navegador está bloqueando conexiones HTTP desde HTTPS.
+                        <br />
+                        Abre el candado 🔒 en la barra de direcciones y permite "Contenido no seguro".
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="pb-20">
