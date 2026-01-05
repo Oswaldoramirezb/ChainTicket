@@ -212,7 +212,7 @@ const VendorMenu = () => {
             return;
         }
         setPurchasing(serviceId);
-        const result = await purchaseDirectly(serviceId, parseInt(vendorId));
+        const result = await purchaseDirectly(serviceId, vendorId);
         setPurchasing(null);
         if (result) {
             setPurchaseSuccess(serviceId);
