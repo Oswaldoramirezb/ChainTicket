@@ -1,9 +1,9 @@
 [package]
-name = "TicketChain"
+name = "ChainTicket"
 version = "0.1.0"
 
 [addresses]
-ticketchain = "0x0a10dde9540e854e79445a37ed6636086128cfc4d13638077e983a14a4398056"
+ticketchain = "0x2339acd68a5b699c8bfefed62febcf497959ca55527227e980c56031b3bfced9"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/movementlabsxyz/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "movement" }
