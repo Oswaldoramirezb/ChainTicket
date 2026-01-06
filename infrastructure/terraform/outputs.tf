@@ -118,5 +118,5 @@ output "cloudfront_distribution_id" {
 
 output "ssh_command" {
   description = "Comando SSH para conectar (necesitas key pair)"
-  value       = "ssh ec2-user@${aws_eip.backend.public_ip}"
+  value       = "ssh -i <key> ec2-user@${aws_eip.backend.public_ip}"
 }
