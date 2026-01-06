@@ -192,7 +192,7 @@ DYNAMODB_TABLE_SALES_HISTORY=${var.project_name}-sales-history-${var.environment
 DYNAMODB_TABLE_AI_CONVERSATIONS=${var.project_name}-ai-conversations-${var.environment}
 
 # Bedrock
-BEDROCK_MODEL_ID=amazon.titan-text-express-v1:0
+BEDROCK_MODEL_ID=amazon.titan-text-express-v1
 ENVFILE
 
 cat > /etc/systemd/system/chainticket.service << 'SERVICE'

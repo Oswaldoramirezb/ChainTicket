@@ -3,9 +3,8 @@
 # ==================================================
 
 resource "aws_amplify_app" "chainticket" {
-  name         = "${var.project_name}-${var.environment}"
-  repository   = var.github_repo_url
-  # access_token already configured via console
+  name       = "${var.project_name}-${var.environment}"
+  repository = var.github_repo_url
 
   build_spec = <<-EOT
     version: 1
