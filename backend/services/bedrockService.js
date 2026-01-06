@@ -158,7 +158,7 @@ async function invokeModel(messages, options = {}) {
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
   
     // Titan devuelve outputText
-    return responseBody.outputText;
+    return responseBody.results?.[0]?.outputText || 'No response from model';
   }
   
 
