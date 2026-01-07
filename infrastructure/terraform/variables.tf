@@ -111,3 +111,8 @@ variable "account_private_key" {
   description = "Private key of the account that deploys"
   type        = string
 }
+
+variable "cloudfront_backend_api_url" {
+  description = "Cloudfront's distribution for backend"
+  type        = string
+}
