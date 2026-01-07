@@ -21,6 +21,20 @@ const AdminProfile = () => {
     const myVendor = vendors.find(v => v.owner_privy_id === user?.privyId || v.ownerPrivyId === user?.privyId);
     const [usesCart, setUsesCart] = useState(myVendor?.uses_cart || false);
 
+    // Update form data when user data loads
+    useEffect(() => {
+        if (user?.profile) {
+            setFormData({
+                fullName: user.profile.fullName || '',
+                email: user.profile.email || '',
+                phone: user.profile.phone || '',
+                location: user.profile.location || '',
+                businessName: user.profile.businessName || '',
+                businessCategory: user.profile.businessCategory || null
+            });
+        }
+    }, [user]);
+
     useEffect(() => {
         if (myVendor) {
             setUsesCart(myVendor.uses_cart || false);
