@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import AnimatedBackground from '../components/AnimatedBackground';
+import PrivyDiagnostic from '../components/PrivyDiagnostic';
 import logo from '../assets/logo.jpg';
 import { Wallet, ArrowRight, User, Building2, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -166,6 +167,9 @@ const Login = () => {
             <div className="absolute bottom-6 text-[10px] text-[#444] tracking-[0.5em] font-mono uppercase">
                 Secured by Movement M1
             </div>
+
+            {/* Diagnostic Tool - Only in development */}
+            {import.meta.env.DEV && <PrivyDiagnostic />}
         </div>
 >>>>>>> 367df0b (fix: Improve Privy Google OAuth login support)
     );
