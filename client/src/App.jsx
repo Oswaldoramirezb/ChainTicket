@@ -13,12 +13,14 @@ import VendorMenu from './pages/client/VendorMenu';
 import Cart from './pages/client/Cart';
 import ClientOrders from './pages/client/ClientOrders';
 import Profile from './pages/client/Profile';
+import WalletWelcomeModal from './components/WalletWelcomeModal';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <DataProvider>
+          <WalletWelcomeModal />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Registration />} />
