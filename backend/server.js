@@ -102,20 +102,26 @@ app.patch('/api/users/:privyId', async (req, res) => {
     const { privyId } = req.params;
     const { userType, profile } = req.body;
     
-    const updated = await db.updateUser(privyId, {
-      userType,
-      fullName: profile?.fullName,
-      email: profile?.email,
-      phone: profile?.phone,
-      location: profile?.location,
-      businessName: profile?.businessName,
-      profileComplete: !!profile?.fullName,
-    });
+    // Build updates object, only including defined values
+    const updates = {};
+    if (userType !== undefined) updates.userType = userType;
+    if (profile?.fullName !== undefined) updates.fullName = profile.fullName;
+    if (profile?.email !== undefined) updates.email = profile.email;
+    if (profile?.phone !== undefined) updates.phone = profile.phone;
+    if (profile?.location !== undefined) updates.location = profile.location;
+    if (profile?.businessName !== undefined) updates.businessName = profile.businessName;
+    if (profile?.businessCategory !== undefined) updates.businessCategory = profile.businessCategory;
+    if (profile?.fullName) updates.profileComplete = true;
+    
+    console.log('📝 Updating user:', privyId, 'with:', updates);
+    
+    const updated = await db.updateUser(privyId, updates);
     
     if (!updated) return res.status(404).json({ error: 'User not found' });
+    console.log('✅ User updated successfully');
     res.json({ success: true, user: toSnakeCase(updated) });
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error('❌ Error updating user:', error);
     res.status(500).json({ error: error.message });
   }
 });
