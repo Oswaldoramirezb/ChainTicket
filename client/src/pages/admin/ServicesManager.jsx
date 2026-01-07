@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +9,13 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const ServicesManager = () => {
     const { myServices, updateService, addService, deleteService, toggleServiceActive } = useData();
     const { isGuest, connectWallet } = useAuth();
+    
+    useEffect(() => {
+        console.log('🎨 ServicesManager: myServices changed', {
+            count: myServices?.length || 0,
+            services: myServices
+        });
+    }, [myServices]);
     const [editingId, setEditingId] = useState(null);
     const [newServiceMode, setNewServiceMode] = useState(false);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
