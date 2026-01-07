@@ -2,15 +2,15 @@ import { useState, useCallback } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { wrapFetchWithPayment } from '@coinbase/x402/client';
 
-// Configuración de Movement Network
+// Movement Network Configuration
 const MOVEMENT_CONFIG = {
-  // Testnet (para desarrollo)
+  // Testnet (for development)
   testnet: {
     rpcUrl: 'https://testnet.movementnetwork.xyz/v1',
     indexerUrl: 'https://hasura.testnet.movementnetwork.xyz/v1/graphql',
     chainId: 250,
   },
-  // Mainnet (para producción)
+  // Mainnet (for production)
   /* mainnet: {
     rpcUrl: 'https://mainnet.movementnetwork.xyz/v1',
     indexerUrl: 'https://indexer.mainnet.movementnetwork.xyz/v1/graphql',
@@ -18,10 +18,10 @@ const MOVEMENT_CONFIG = {
   } */
 };
 
-// Dirección de tu contrato deployado
+// Deployed contract address
 const CONTRACT_ADDRESS = '0x2339acd68a5b699c8bfefed62febcf497959ca55527227e980c56031b3bfced9'
 
-// Usar testnet para desarrollo
+// Use testnet for development
 const NETWORK = 'testnet';
 const config = MOVEMENT_CONFIG[NETWORK];
 
@@ -31,23 +31,23 @@ export const useMovement = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Obtener el wallet de Privy
+  // Get Privy wallet
   const getWallet = useCallback(() => {
     if (!wallets || wallets.length === 0) return null;
     return wallets[0]; // Embedded wallet de Privy
   }, [wallets]);
 
   // ============================================
-  // FUNCIONES DE ESCRITURA (Transacciones)
+  // WRITE FUNCTIONS (Transactions)
   // ============================================
 
-  // Inicializar Admin Registry
+  // Initialize Admin Registry
   const initializeAdminRegistry = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -70,26 +70,26 @@ export const useMovement = () => {
   // x402 PAYMENT FUNCTIONS
   // ============================================
 
-  // Comprar ticket con pago x402
+  // Purchase ticket with x402 payment
   const purchaseTicketWithPayment = useCallback(async (eventAddress, ticketPrice) => {
     setLoading(true);
     setError(null);
     
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
-      // Obtener el signer de Privy para x402
+      // Get Privy signer for x402
       const provider = await wallet.getEthereumProvider();
       
-      // Wrap fetch con x402 para manejar pagos automáticamente
+      // Wrap fetch with x402 to handle payments automatically
       const paymentFetch = wrapFetchWithPayment(fetch, {
-        // Función para firmar el pago
+        // Function to sign payment
         signPayment: async (paymentRequirements) => {
-          // Construir el payload de pago
+          // Build payment payload
           const { maxAmountRequired, payTo, asset, network } = paymentRequirements;
           
-          // Firmar con el wallet de Privy
+          // Sign with Privy wallet
           const signature = await provider.request({
             method: 'eth_signTypedData_v4',
             params: [wallet.address, JSON.stringify({
@@ -126,7 +126,7 @@ export const useMovement = () => {
         },
       });
 
-      // Hacer la request con pago automático
+      // Make request with automatic payment
       const response = await paymentFetch('http://localhost:3001/api/purchase-ticket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -152,16 +152,16 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Función simplificada para tickets gratis (sin x402)
+  // Simplified function for free tickets (without x402)
   const purchaseFreeTicket = useCallback(async (eventAddress) => {
     setLoading(true);
     setError(null);
     
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
-      // Generar QR hash localmente
+      // Generate QR hash locally
       const qrHash = Array.from(
         new Uint8Array(
           await crypto.subtle.digest('SHA-256', 
@@ -187,7 +187,7 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Crear un evento
+  // Create an event
   const createEvent = useCallback(async ({
     adminRegistryAddress,
     name,
@@ -204,7 +204,7 @@ export const useMovement = () => {
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -234,7 +234,7 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Crear Business Profile
+  // Create Business Profile
   const createBusinessProfile = useCallback(async ({
     businessName,
     businessType,
@@ -253,7 +253,7 @@ export const useMovement = () => {
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -285,13 +285,13 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Comprar ticket gratis (precio = 0)
+  // Purchase free ticket (price = 0)
   const purchaseFreeTicker = useCallback(async (eventObjectAddress, qrHash) => {
     setLoading(true);
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -310,13 +310,13 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Mint ticket después de pago (llamado por backend/x402)
+  // Mint ticket after payment (called by backend/x402)
   const mintTicketAfterPayment = useCallback(async (eventObjectAddress, buyerAddress, qrHash) => {
     setLoading(true);
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -335,13 +335,13 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Usar ticket (check-in por el usuario)
+  // Use ticket (check-in by user)
   const useTicket = useCallback(async (ticketObjectAddress) => {
     setLoading(true);
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -360,13 +360,13 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Check-in por staff
+  // Check-in by staff
   const checkIn = useCallback(async (ticketObjectAddress, eventObjectAddress, qrHash) => {
     setLoading(true);
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -385,13 +385,13 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Transferir ticket
+  // Transfer ticket
   const transferTicket = useCallback(async (ticketObjectAddress, recipientAddress) => {
     setLoading(true);
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -410,13 +410,13 @@ export const useMovement = () => {
     }
   }, [getWallet]);
 
-  // Cancelar evento
+  // Cancel event
   const cancelEvent = useCallback(async (eventObjectAddress) => {
     setLoading(true);
     setError(null);
     try {
       const wallet = getWallet();
-      if (!wallet) throw new Error('Wallet no conectado');
+      if (!wallet) throw new Error('Wallet not connected');
 
       const payload = {
         type: 'entry_function_payload',
@@ -436,10 +436,10 @@ export const useMovement = () => {
   }, [getWallet]);
 
   // ============================================
-  // FUNCIONES DE LECTURA (GraphQL Indexer)
+  // READ FUNCTIONS (GraphQL Indexer)
   // ============================================
 
-  // Query genérica al indexer
+  // Generic query to indexer
   const queryIndexer = useCallback(async (query, variables = {}) => {
     try {
       const response = await fetch(config.indexerUrl, {
@@ -456,7 +456,7 @@ export const useMovement = () => {
     }
   }, []);
 
-  // Obtener eventos creados por un negocio
+  // Get events created by a business
   const getEventsByBusiness = useCallback(async (businessAddress) => {
     const query = `
       query GetEventsByBusiness($address: String!) {
@@ -476,7 +476,7 @@ export const useMovement = () => {
     return queryIndexer(query, { address: businessAddress });
   }, [queryIndexer]);
 
-  // Obtener tickets de un usuario
+  // Get user tickets
   const getTicketsByOwner = useCallback(async (ownerAddress) => {
     const query = `
       query GetTicketsByOwner($address: String!) {
@@ -496,7 +496,7 @@ export const useMovement = () => {
     return queryIndexer(query, { address: ownerAddress });
   }, [queryIndexer]);
 
-  // Obtener todos los eventos activos
+  // Get all active events
   const getAllEvents = useCallback(async () => {
     const query = `
       query GetAllEvents {
@@ -516,7 +516,7 @@ export const useMovement = () => {
     return queryIndexer(query);
   }, [queryIndexer]);
 
-  // Obtener estadísticas de un evento
+  // Get event statistics
   const getEventStats = useCallback(async (eventAddress) => {
     const query = `
       query GetEventStats($eventAddress: String!) {
@@ -550,7 +550,7 @@ export const useMovement = () => {
   }, [queryIndexer]);
 
   // ============================================
-  // FUNCIONES VIEW (RPC directo)
+  // VIEW FUNCTIONS (Direct RPC)
   // ============================================
 
   const callViewFunction = useCallback(async (functionName, typeArgs = [], args = []) => {
@@ -572,33 +572,33 @@ export const useMovement = () => {
     }
   }, []);
 
-  // Verificar si ticket es válido
+  // Verify if ticket is valid
   const isTicketValid = useCallback(async (ticketObjectAddress) => {
     return callViewFunction('ticket::is_ticket_valid', [], [ticketObjectAddress]);
   }, [callViewFunction]);
 
-  // Obtener info del evento
+  // Get event info
   const getEventInfo = useCallback(async (eventObjectAddress) => {
     return callViewFunction('ticket::get_event_info', [], [eventObjectAddress]);
   }, [callViewFunction]);
 
-  // Obtener info del ticket
+  // Get ticket info
   const getTicketInfo = useCallback(async (ticketObjectAddress) => {
     return callViewFunction('ticket::get_ticket_info', [], [ticketObjectAddress]);
   }, [callViewFunction]);
 
-  // Verificar QR hash
+  // Verify QR hash
   const verifyQrHash = useCallback(async (ticketObjectAddress, hash) => {
     return callViewFunction('ticket::verify_qr_hash', [], [ticketObjectAddress, hash]);
   }, [callViewFunction]);
 
-  // Obtener tickets restantes
+  // Get remaining tickets
   const getTicketsRemaining = useCallback(async (eventObjectAddress) => {
     return callViewFunction('ticket::get_tickets_remaining', [], [eventObjectAddress]);
   }, [callViewFunction]);
 
   return {
-    // Estado
+    // State
     loading,
     error,
     authenticated,
@@ -608,7 +608,7 @@ export const useMovement = () => {
     contractAddress: CONTRACT_ADDRESS,
     network: NETWORK,
     
-    // Escritura (transacciones)
+    // Write (transactions)
     initializeAdminRegistry,
     createEvent,
     createBusinessProfile,
@@ -619,7 +619,7 @@ export const useMovement = () => {
     transferTicket,
     cancelEvent,
     
-    // Lectura (indexer)
+    // Read (indexer)
     queryIndexer,
     getEventsByBusiness,
     getTicketsByOwner,
