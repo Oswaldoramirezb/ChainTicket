@@ -97,6 +97,11 @@ export const AuthProvider = ({ children }) => {
                         
                         if (data.found && data.user) {
                             const dbUser = data.user;
+                            console.log('👤 User from DB:', {
+                                user_type: dbUser.user_type,
+                                willSetRole: dbUser.user_type === 'vendor' ? 'admin' : 'client',
+                                fullUser: dbUser
+                            });
                             setUser({
                                 role: dbUser.user_type === 'vendor' ? 'admin' : 'client',
                                 userType: dbUser.user_type,
