@@ -59,14 +59,23 @@ const ClientLayout = () => {
                 </div>
 
                 <div className="flex items-center gap-6">
-                    <div className="hidden sm:flex flex-col items-end">
-                        <p className="text-[10px] text-[#888] uppercase tracking-widest">
-                            {isGuest ? 'Browsing as' : 'Logged in as'}
-                        </p>
-                        <p className="text-xs font-bold text-[#FFD700] font-mono">
-                            {isGuest ? 'Guest' : (user?.wallet ? user.wallet.substring(0, 8) + '...' : 'User')}
-                        </p>
-                    </div>
+                    {!isGuest && user?.wallet && (
+                        <div className="hidden md:flex flex-col items-end bg-black/30 border border-[#FFD700]/20 px-4 py-2 rounded">
+                            <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Connected Wallet</p>
+                            <div className="flex items-center gap-2">
+                                <Wallet className="w-3 h-3 text-[#FFD700]" />
+                                <p className="text-xs font-mono text-[#FFD700] font-semibold">
+                                    {user.wallet}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                    {isGuest && (
+                        <div className="hidden sm:flex flex-col items-end">
+                            <p className="text-[10px] text-[#888] uppercase tracking-widest">Browsing as</p>
+                            <p className="text-xs font-bold text-[#FFD700] font-mono">Guest</p>
+                        </div>
+                    )}
                     {!isGuest && (
                         <button onClick={handleLogout} className="text-xs uppercase tracking-widest text-[#666] hover:text-white transition-colors">
                             Exit
