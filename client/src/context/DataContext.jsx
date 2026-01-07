@@ -289,11 +289,14 @@ export const DataProvider = ({ children }) => {
             });
             const data = await response.json();
             if (data.success) {
-                setServices(prev => prev.map(s => s.id === id ? {
-                    ...s,
+                console.log('✅ Service updated successfully:', id);
+                // Update both lists
+                const updatedService = {
                     ...updates,
-                    schedule: updates.schedule || s.schedule
-                } : s));
+                    schedule: updates.schedule
+                };
+                setServices(prev => prev.map(s => s.id === id ? { ...s, ...updatedService } : s));
+                setMyServices(prev => prev.map(s => s.id === id ? { ...s, ...updatedService } : s));
             }
         } catch (error) {
             console.error('Error updating service:', error);
@@ -307,7 +310,10 @@ export const DataProvider = ({ children }) => {
             });
             const data = await response.json();
             if (data.success) {
+                console.log('✅ Service deleted successfully:', id);
+                // Update both lists
                 setServices(prev => prev.filter(s => s.id !== id));
+                setMyServices(prev => prev.filter(s => s.id !== id));
             }
         } catch (error) {
             console.error('Error deleting service:', error);
@@ -327,8 +333,14 @@ export const DataProvider = ({ children }) => {
             });
             const data = await response.json();
             if (data.success) {
+                console.log('✅ Service toggled successfully:', id, 'isActive:', data.service.is_active);
+                // Update both lists
+                const newActiveState = data.service.is_active;
                 setServices(prev => prev.map(s => 
-                    s.id === id ? { ...s, isActive: data.service.is_active } : s
+                    s.id === id ? { ...s, isActive: newActiveState } : s
+                ));
+                setMyServices(prev => prev.map(s => 
+                    s.id === id ? { ...s, isActive: newActiveState } : s
                 ));
                 return true;
             }
