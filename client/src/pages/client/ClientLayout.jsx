@@ -2,6 +2,7 @@ import { useNavigate, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, ShoppingBag, Clock, ShoppingCart, User, Wallet, KeyRound } from 'lucide-react';
 import AnimatedBackground from '../../components/AnimatedBackground';
+import WalletWidget from '../../components/WalletWidget';
 import logo from '../../assets/logo.jpg';
 
 const ClientLayout = () => {
@@ -59,17 +60,7 @@ const ClientLayout = () => {
                 </div>
 
                 <div className="flex items-center gap-6">
-                    {!isGuest && user?.wallet && (
-                        <div className="hidden md:flex flex-col items-end bg-black/30 border border-[#FFD700]/20 px-4 py-2 rounded">
-                            <p className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Connected Wallet</p>
-                            <div className="flex items-center gap-2">
-                                <Wallet className="w-3 h-3 text-[#FFD700]" />
-                                <p className="text-xs font-mono text-[#FFD700] font-semibold">
-                                    {user.wallet}
-                                </p>
-                            </div>
-                        </div>
-                    )}
+                    {!isGuest && <WalletWidget compact />}
                     {isGuest && (
                         <div className="hidden sm:flex flex-col items-end">
                             <p className="text-[10px] text-[#888] uppercase tracking-widest">Browsing as</p>
