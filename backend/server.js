@@ -102,7 +102,7 @@ app.patch('/api/users/:privyId', async (req, res) => {
     const { privyId } = req.params;
     const { userType, profile } = req.body;
     
-    // Build updates object, only including defined values
+    // Build updates object using snake_case for DynamoDB
     const updates = {};
     if (userType !== undefined) updates.userType = userType;
     if (profile?.fullName !== undefined) updates.fullName = profile.fullName;
@@ -118,7 +118,7 @@ app.patch('/api/users/:privyId', async (req, res) => {
     const updated = await db.updateUser(privyId, updates);
     
     if (!updated) return res.status(404).json({ error: 'User not found' });
-    console.log('✅ User updated successfully');
+    console.log('✅ User updated successfully:', updated);
     res.json({ success: true, user: toSnakeCase(updated) });
   } catch (error) {
     console.error('❌ Error updating user:', error);
