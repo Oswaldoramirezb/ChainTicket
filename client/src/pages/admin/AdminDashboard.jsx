@@ -1,6 +1,7 @@
 import { useData } from '../../context/DataContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, CheckCircle, User, Activity } from 'lucide-react';
+import WalletWidget from '../../components/WalletWidget';
 
 const AdminDashboard = () => {
     const { orders, services, updateOrderStatus } = useData();
@@ -26,6 +27,11 @@ const AdminDashboard = () => {
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     <span className="text-xs font-mono text-green-500 uppercase tracking-widest">System Active</span>
                 </div>
+            </div>
+
+            {/* Wallet Widget */}
+            <div className="mb-12">
+                <WalletWidget />
             </div>
 
             {activeOrders.length === 0 ? (
