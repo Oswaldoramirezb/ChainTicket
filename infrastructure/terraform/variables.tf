@@ -106,3 +106,8 @@ variable "github_repo" {
   type        = string
   default     = "ChainTicket"
 }
+
+variable "account_private_key" {
+  description = "Private key of the account that deploys"
+  type        = string
+}
