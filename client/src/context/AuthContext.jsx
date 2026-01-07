@@ -103,22 +103,22 @@ export const AuthProvider = ({ children }) => {
                                 fullUser: dbUser
                             });
                             setUser({
-                                role: dbUser.user_type === 'vendor' ? 'admin' : 'client',
-                                userType: dbUser.user_type,
-                                name: dbUser.full_name || privyUser.email?.address || walletAddress?.slice(0, 10) || 'User',
+                                role: dbUser.userType === 'vendor' || dbUser.user_type === 'vendor' ? 'admin' : 'client',
+                                userType: dbUser.userType || dbUser.user_type,
+                                name: dbUser.fullName || dbUser.full_name || privyUser.email?.address || walletAddress?.slice(0, 10) || 'User',
                                 wallet: walletAddress,
                                 privyId: privyId,
                                 profile: {
-                                    fullName: dbUser.full_name,
+                                    fullName: dbUser.fullName || dbUser.full_name,
                                     email: dbUser.email,
                                     phone: dbUser.phone,
                                     location: dbUser.location,
-                                    businessName: dbUser.business_name,
-                                    businessCategory: dbUser.business_category
+                                    businessName: dbUser.businessName || dbUser.business_name,
+                                    businessCategory: dbUser.businessCategory || dbUser.business_category
                                 },
                                 isRegistered: true,
                                 isGuest: false,
-                                profileComplete: dbUser.profile_complete,
+                                profileComplete: dbUser.profileComplete || dbUser.profile_complete,
                                 previousGuestData: previousGuestData?.data || null
                             });
                             setNeedsRegistration(false);
