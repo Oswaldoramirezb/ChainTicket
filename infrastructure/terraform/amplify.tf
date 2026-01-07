@@ -72,7 +72,7 @@ resource "aws_amplify_branch" "main" {
     VITE_MOVEMENT_RPC_URL     = "https://testnet.movementnetwork.xyz/v1"
     VITE_MOVEMENT_INDEXER_URL = "https://hasura.testnet.movementnetwork.xyz/v1/graphql"
     VITE_CONTRACT_ADDRESS     = "0x2339acd68a5b699c8bfefed62febcf497959ca55527227e980c56031b3bfced9"
-    VITE_API_URL              = var.backend_api_url # ← viene de terraform.tfvars
+    VITE_API_URL              = var.cloudfront_backend_api_url # ← viene de terraform.tfvars
   }
 
   tags = {
