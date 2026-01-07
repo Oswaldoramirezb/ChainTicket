@@ -17,20 +17,44 @@ const WalletWidget = ({ compact = false }) => {
     useEffect(() => {
         if (address) {
             fetchBalance();
+            // Refresh balance every 30 seconds
+            const interval = setInterval(fetchBalance, 30000);
+            return () => clearInterval(interval);
         }
     }, [address]);
 
     const fetchBalance = async () => {
+        if (!address) return;
+        
         setLoadingBalance(true);
         try {
-            // Placeholder for Movement balance fetching
-            // You would implement actual balance fetching from Movement network here
-            setTimeout(() => {
-                setBalance('0.00'); // Placeholder
-                setLoadingBalance(false);
-            }, 1000);
+            // Fetch balance from Movement testnet RPC
+            const response = await fetch('https://testnet.movementnetwork.xyz/v1', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'eth_getBalance',
+                    params: [address, 'latest'],
+                    id: 1
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.result) {
+                // Convert hex balance to decimal and format
+                const balanceWei = parseInt(data.result, 16);
+                const balanceMove = (balanceWei / 1e18).toFixed(4);
+                setBalance(balanceMove);
+            } else {
+                console.error('Error fetching balance:', data.error);
+                setBalance('0.00');
+            }
         } catch (error) {
             console.error('Error fetching balance:', error);
+            setBalance('0.00');
+        } finally {
             setLoadingBalance(false);
         }
     };

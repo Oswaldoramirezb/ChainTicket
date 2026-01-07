@@ -25,6 +25,9 @@ const CONTRACT_ADDRESS = '0x2339acd68a5b699c8bfefed62febcf497959ca55527227e980c5
 const NETWORK = 'testnet';
 const config = MOVEMENT_CONFIG[NETWORK];
 
+// Backend API URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://d4y2c4layjh2.cloudfront.net';
+
 export const useMovement = () => {
   const { authenticated } = usePrivy();
   const { wallets } = useWallets();
@@ -36,6 +39,28 @@ export const useMovement = () => {
     if (!wallets || wallets.length === 0) return null;
     return wallets[0]; // Embedded wallet de Privy
   }, [wallets]);
+
+  // Save transaction to DynamoDB
+  const saveTransactionToDB = useCallback(async (txData) => {
+    try {
+      const response = await fetch(`${API_URL}/api/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(txData)
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to save transaction to DB');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Transaction saved to DynamoDB:', result);
+      return result;
+    } catch (err) {
+      console.error('Error saving transaction:', err);
+      // Don't throw - transaction succeeded on blockchain, DB save is secondary
+    }
+  }, []);
 
   // ============================================
   // WRITE FUNCTIONS (Transactions)
@@ -153,7 +178,7 @@ export const useMovement = () => {
   }, [getWallet]);
 
   // Simplified function for free tickets (without x402)
-  const purchaseFreeTicket = useCallback(async (eventAddress) => {
+  const purchaseFreeTicket = useCallback(async (eventAddress, eventName = 'Event') => {
     setLoading(true);
     setError(null);
     
@@ -178,6 +203,20 @@ export const useMovement = () => {
       };
 
       const response = await wallet.sendTransaction(payload);
+      
+      // Save transaction to DynamoDB
+      await saveTransactionToDB({
+        walletAddress: wallet.address,
+        txHash: response?.hash || `0x${Date.now()}`,
+        type: 'sent',
+        amount: '0',
+        to: eventAddress,
+        from: wallet.address,
+        status: 'confirmed',
+        description: `Free ticket purchase - ${eventName}`,
+        chainId: config.chainId.toString()
+      });
+      
       return response;
     } catch (err) {
       setError(err.message);
@@ -185,7 +224,7 @@ export const useMovement = () => {
     } finally {
       setLoading(false);
     }
-  }, [getWallet]);
+  }, [getWallet, saveTransactionToDB]);
 
   // Create an event
   const createEvent = useCallback(async ({
@@ -225,6 +264,20 @@ export const useMovement = () => {
       };
 
       const response = await wallet.sendTransaction(payload);
+      
+      // Save transaction to DynamoDB
+      await saveTransactionToDB({
+        walletAddress: wallet.address,
+        txHash: response?.hash || `0x${Date.now()}`,
+        type: 'sent',
+        amount: '0',
+        to: CONTRACT_ADDRESS,
+        from: wallet.address,
+        status: 'confirmed',
+        description: `Create event: ${name}`,
+        chainId: config.chainId.toString()
+      });
+      
       return response;
     } catch (err) {
       setError(err.message);
@@ -232,7 +285,7 @@ export const useMovement = () => {
     } finally {
       setLoading(false);
     }
-  }, [getWallet]);
+  }, [getWallet, saveTransactionToDB]);
 
   // Create Business Profile
   const createBusinessProfile = useCallback(async ({
@@ -386,7 +439,7 @@ export const useMovement = () => {
   }, [getWallet]);
 
   // Transfer ticket
-  const transferTicket = useCallback(async (ticketObjectAddress, recipientAddress) => {
+  const transferTicket = useCallback(async (ticketObjectAddress, recipientAddress, ticketDescription = 'Ticket') => {
     setLoading(true);
     setError(null);
     try {
@@ -401,6 +454,20 @@ export const useMovement = () => {
       };
 
       const response = await wallet.sendTransaction(payload);
+      
+      // Save transaction to DynamoDB
+      await saveTransactionToDB({
+        walletAddress: wallet.address,
+        txHash: response?.hash || `0x${Date.now()}`,
+        type: 'sent',
+        amount: '0',
+        to: recipientAddress,
+        from: wallet.address,
+        status: 'confirmed',
+        description: `Transfer ticket: ${ticketDescription}`,
+        chainId: config.chainId.toString()
+      });
+      
       return response;
     } catch (err) {
       setError(err.message);
@@ -408,7 +475,7 @@ export const useMovement = () => {
     } finally {
       setLoading(false);
     }
-  }, [getWallet]);
+  }, [getWallet, saveTransactionToDB]);
 
   // Cancel event
   const cancelEvent = useCallback(async (eventObjectAddress) => {
