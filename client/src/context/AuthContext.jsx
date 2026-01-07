@@ -208,6 +208,12 @@ export const AuthProvider = ({ children }) => {
         
         if (!privyId) return false;
 
+        console.log('📝 Completing registration:', {
+            userType,
+            willSetRole: userType === 'vendor' ? 'admin' : 'client',
+            profileData
+        });
+
         try {
             const response = await fetch(`${API_URL}/api/users`, {
                 method: 'POST',

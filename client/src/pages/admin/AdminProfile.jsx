@@ -42,17 +42,16 @@ const AdminProfile = () => {
     return (
         <div className="max-w-2xl mx-auto pb-20">
             {user?.role === 'client' && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
-                    <h3 className="text-red-400 font-bold mb-2">⚠️ Account Type Issue Detected</h3>
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                    <h3 className="text-yellow-400 font-bold mb-2">🔄 Account Setup Required</h3>
                     <p className="text-sm text-gray-300 mb-3">
-                        Your account is incorrectly set as 'client' but you're accessing the admin dashboard. 
-                        Click below to fix your account type to 'vendor/admin'.
+                        To access all administrator features, please complete your account setup by confirming your role.
                     </p>
                     <button
                         onClick={fixUserType}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-bold transition-colors"
+                        className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded text-sm font-bold transition-colors"
                     >
-                        Fix Account Type Now
+                        Activate Administrator Account
                     </button>
                 </div>
             )}
