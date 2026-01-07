@@ -4,10 +4,13 @@ import { useData } from '../../context/DataContext';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Save, Edit2, Building, ShoppingCart, Ticket } from 'lucide-react';
 import BusinessCategorySelector from '../../components/BusinessCategorySelector';
+import TransactionFeedback from '../../components/TransactionFeedback';
+import { useTransactionWithFeedback } from '../../hooks/useTransactionWithFeedback';
 
 const AdminProfile = () => {
     const { user, updateUserProfile, fixUserType } = useAuth();
     const { vendors, updateVendorSettings } = useData();
+    const { txState, executeTransaction, closeFeedback } = useTransactionWithFeedback();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         fullName: user?.profile?.fullName || '',
@@ -49,12 +52,20 @@ const AdminProfile = () => {
     };
 
     const handleSave = async () => {
-        const success = await updateUserProfile(formData);
-        if (success) {
-            alert('✅ Profile saved successfully!');
+        try {
+            await executeTransaction(
+                async () => {
+                    const success = await updateUserProfile(formData);
+                    if (!success) {
+                        throw new Error('Failed to save profile');
+                    }
+                    return { success: true };
+                },
+                'Perfil actualizado exitosamente con Privy'
+            );
             setIsEditing(false);
-        } else {
-            alert('❌ Failed to save profile. Check console for errors.');
+        } catch (error) {
+            console.error('Error saving profile:', error);
         }
     };
 
@@ -247,6 +258,15 @@ const AdminProfile = () => {
                     </div>
                 )}
             </motion.div>
+
+            {/* Transaction Feedback Modal */}
+            <TransactionFeedback
+                isOpen={txState.isOpen}
+                status={txState.status}
+                message={txState.message}
+                txHash={txState.txHash}
+                onClose={closeFeedback}
+            />
         </div>
     );
 };
