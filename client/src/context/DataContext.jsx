@@ -212,18 +212,30 @@ export const DataProvider = ({ children }) => {
     // Load initial data
     useEffect(() => {
         const loadData = async () => {
+            console.log('🔄 DataContext: Loading initial data...', { 
+                privyId: user?.privyId, 
+                role: user?.role, 
+                isGuest 
+            });
+            
             setLoading(true);
             await fetchVendors();
             await fetchServices(true);
             await fetchQueueInfo();
+            
             if (user?.privyId && !isGuest) {
+                console.log('👤 User is authenticated, loading user-specific data...', { role: user.role });
                 if (user.role === 'admin') {
+                    console.log('👑 User is admin, fetching my services...');
                     await fetchMyServices();
                     await fetchVendorOrders();
                 } else {
+                    console.log('👥 User is client, fetching orders and tickets...');
                     await fetchMyOrders();
                     await fetchMyTickets();
                 }
+            } else {
+                console.log('⚠️ User not authenticated or is guest, skipping user-specific data');
             }
             setLoading(false);
         };
