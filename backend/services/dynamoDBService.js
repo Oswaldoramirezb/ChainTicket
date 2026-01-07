@@ -76,6 +76,7 @@ export async function createOrUpdateUser(userData) {
     phone: profile?.phone || null,
     location: profile?.location || null,
     businessName: profile?.businessName || null,
+    businessCategory: profile?.businessCategory || null,
     profileComplete: !!profile?.fullName,
     createdAt: now,
     updatedAt: now,

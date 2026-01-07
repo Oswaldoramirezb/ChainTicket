@@ -108,7 +108,8 @@ export const AuthProvider = ({ children }) => {
                                     email: dbUser.email,
                                     phone: dbUser.phone,
                                     location: dbUser.location,
-                                    businessName: dbUser.business_name
+                                    businessName: dbUser.business_name,
+                                    businessCategory: dbUser.business_category
                                 },
                                 isRegistered: true,
                                 isGuest: false,

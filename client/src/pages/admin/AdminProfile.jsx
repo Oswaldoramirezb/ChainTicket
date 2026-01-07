@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Save, Edit2, Building, ShoppingCart, Ticket } from 'lucide-react';
+import BusinessCategorySelector from '../../components/BusinessCategorySelector';
 
 const AdminProfile = () => {
     const { user, updateUserProfile } = useAuth();
@@ -13,7 +14,8 @@ const AdminProfile = () => {
         email: user?.profile?.email || '',
         phone: user?.profile?.phone || '',
         location: user?.profile?.location || '',
-        businessName: user?.profile?.businessName || ''
+        businessName: user?.profile?.businessName || '',
+        businessCategory: user?.profile?.businessCategory || null
     });
 
     const myVendor = vendors.find(v => v.owner_privy_id === user?.privyId || v.ownerPrivyId === user?.privyId);
@@ -162,6 +164,18 @@ const AdminProfile = () => {
                             )}
                         </div>
                     </div>
+                </div>
+
+                <div className="bg-[#111] border border-[#333] p-6 space-y-6">
+                    <h3 className="text-lg font-bold text-white uppercase tracking-widest mb-4">Business Category</h3>
+                    <p className="text-xs text-gray-400 mb-4">
+                        Select your business category to unlock specific service types and features
+                    </p>
+                    <BusinessCategorySelector
+                        currentCategory={formData.businessCategory}
+                        onSelect={(category) => setFormData({ ...formData, businessCategory: category })}
+                        disabled={!isEditing}
+                    />
                 </div>
 
                 {myVendor && (
