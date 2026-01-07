@@ -180,6 +180,10 @@ PORT=3001
 NODE_ENV=production
 AWS_REGION=${var.aws_region}
 
+# Important Addresses
+PAYMENT_RECEIVER_ADDRESS=0x725093639BA33D79cb7e31A6F7dEca912e22b019
+PAYMENT_PROCESSOR_PRIVATE_KEY=${var.account_private_key}
+
 # Movement Network
 MOVEMENT_RPC_URL=https://testnet.movementnetwork.xyz/v1
 MOVEMENT_INDEXER_URL=https://hasura.testnet.movementnetwork.xyz/v1/graphql
