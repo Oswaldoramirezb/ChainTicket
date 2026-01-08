@@ -841,6 +841,58 @@ export async function getBusinessContextForAI(businessId) {
   return { metrics: metrics || {}, weeklyHistory, recentConversations, lastUpdated: new Date().toISOString() };
 }
 
+// Obtener resumen de ventas con info de pagos crypto para la IA
+export async function getSalesMetricsForAI(businessId, days = 30) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  
+  const command = new QueryCommand({
+    TableName: TABLES.SALESHISTORY,
+    KeyConditionExpression: 'pk = :pk AND sk >= :startDate',
+    ExpressionAttributeValues: {
+      ':pk': `BUSINESS#${businessId}`,
+      ':startDate': `SALE#${startDate.toISOString()}`
+    }
+  });
+
+  const result = await docClient.send(command);
+  const sales = result.Items || [];
+
+  // Calcular métricas
+  const totalSales = sales.length;
+  const totalRevenue = sales.reduce((sum, s) => sum + (s.amount || 0), 0);
+  
+  // Separar por método de pago
+  const cryptoSales = sales.filter(s => s.paymentMethod === 'x402-usdc');
+  const freeSales = sales.filter(s => s.paymentMethod === 'free' || !s.paymentMethod);
+  
+  const cryptoRevenue = cryptoSales.reduce((sum, s) => sum + (s.amount || 0), 0);
+  const cryptoCount = cryptoSales.length;
+
+  return {
+    period: `${days} days`,
+    totalSales,
+    totalRevenue,
+    // Métricas crypto específicas
+    crypto: {
+      salesCount: cryptoCount,
+      revenue: cryptoRevenue,
+      percentage: totalSales > 0 ? ((cryptoCount / totalSales) * 100).toFixed(1) : 0,
+      recentTransactions: cryptoSales.slice(0, 5).map(s => ({
+        txHash: s.paymentTxHash,
+        amount: s.amount,
+        date: s.createdAt
+      }))
+    },
+    free: {
+      salesCount: freeSales.length
+    },
+    // Para que la IA tenga contexto
+    summary: `${totalSales} ventas totales ($${totalRevenue.toFixed(2)}). ` +
+             `${cryptoCount} pagos crypto ($${cryptoRevenue.toFixed(2)} USDC via x402).`
+  };
+}
+
 export default {
   // Users
   getUserByPrivyId, createOrUpdateUser, updateUser,

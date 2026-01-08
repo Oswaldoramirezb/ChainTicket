@@ -15,6 +15,7 @@ import {
   saveBusinessMetrics,
   getBusinessContextForAI 
 } from '../services/dynamoDBService.js';
+import * as db from '../services/dynamoDBService.js';
 
 const router = express.Router();
 
@@ -147,6 +148,36 @@ router.post('/update-metrics', async (req, res) => {
       success: false,
       error: error.message,
     });
+  }
+});
+
+// En el endpoint que genera recomendaciones de IA
+app.post('/api/ai/chat', async (req, res) => {
+  try {
+    const { businessId, question } = req.body;
+    
+    // Obtener métricas incluyendo pagos crypto
+    const metrics = await db.getSalesMetricsForAI(businessId, 30);
+    
+    // Construir contexto para la IA
+    const context = `
+      Datos del negocio:
+      - ${metrics.summary}
+      - Pagos en crypto (USDC): ${metrics.crypto.salesCount} transacciones
+      - Ingresos crypto: $${metrics.crypto.revenue} USDC
+      - Porcentaje de ventas crypto: ${metrics.crypto.percentage}%
+      ${metrics.crypto.recentTransactions.length > 0 ? 
+        `- Últimas transacciones crypto: ${metrics.crypto.recentTransactions.map(t => 
+          `$${t.amount} (${t.date})`).join(', ')}` : ''}
+    `;
+    
+    // Llamar a Bedrock con el contexto
+    const response = await generateAIResponse(question, context);
+    
+    res.json({ response, metrics });
+  } catch (error) {
+    console.error('Error en AI chat:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
