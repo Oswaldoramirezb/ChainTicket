@@ -1,9 +1,4 @@
-
 // backend/routes/aiRoutes.js
-// ============================================
-// Rutas de IA para ChainTicket
-// ============================================
-
 import express from 'express';
 import { 
   generateTicketRecommendation, 
@@ -13,15 +8,14 @@ import {
 import { 
   getBusinessMetrics, 
   saveBusinessMetrics,
-  getBusinessContextForAI 
+  getBusinessContextForAI,
+  getSalesMetricsForAI  // AGREGAR ESTE IMPORT
 } from '../services/dynamoDBService.js';
-import * as db from '../services/dynamoDBService.js';
 
 const router = express.Router();
 
 /**
  * POST /api/ai/recommend
- * Obtener recomendación de IA para un negocio
  */
 router.post('/recommend', async (req, res) => {
   try {
@@ -30,16 +24,16 @@ router.post('/recommend', async (req, res) => {
     if (!businessId || !question) {
       return res.status(400).json({
         success: false,
-        error: 'businessId y question son requeridos',
+        error: 'businessId and question are required',
       });
     }
 
-    console.log(`🤖 Generando recomendación para negocio: ${businessId}`);
+    console.log(`🤖 Generating recommendation for business: ${businessId}`);
     const result = await generateTicketRecommendation(businessId, question);
 
     res.json(result);
   } catch (error) {
-    console.error('Error en /ai/recommend:', error);
+    console.error('Error in /ai/recommend:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -49,7 +43,6 @@ router.post('/recommend', async (req, res) => {
 
 /**
  * POST /api/ai/analyze-demand
- * Analizar patrones de demanda
  */
 router.post('/analyze-demand', async (req, res) => {
   try {
@@ -58,14 +51,14 @@ router.post('/analyze-demand', async (req, res) => {
     if (!businessId) {
       return res.status(400).json({
         success: false,
-        error: 'businessId es requerido',
+        error: 'businessId is required',
       });
     }
 
     const result = await analyzeDemandPatterns(businessId);
     res.json(result);
   } catch (error) {
-    console.error('Error en /ai/analyze-demand:', error);
+    console.error('Error in /ai/analyze-demand:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -75,7 +68,6 @@ router.post('/analyze-demand', async (req, res) => {
 
 /**
  * POST /api/ai/suggest-pricing
- * Sugerir precios óptimos
  */
 router.post('/suggest-pricing', async (req, res) => {
   try {
@@ -84,14 +76,14 @@ router.post('/suggest-pricing', async (req, res) => {
     if (!businessId) {
       return res.status(400).json({
         success: false,
-        error: 'businessId es requerido',
+        error: 'businessId is required',
       });
     }
 
     const result = await suggestOptimalPricing(businessId, eventDetails || {});
     res.json(result);
   } catch (error) {
-    console.error('Error en /ai/suggest-pricing:', error);
+    console.error('Error in /ai/suggest-pricing:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -101,7 +93,6 @@ router.post('/suggest-pricing', async (req, res) => {
 
 /**
  * GET /api/ai/context/:businessId
- * Obtener el contexto actual de IA para un negocio
  */
 router.get('/context/:businessId', async (req, res) => {
   try {
@@ -113,7 +104,7 @@ router.get('/context/:businessId', async (req, res) => {
       context,
     });
   } catch (error) {
-    console.error('Error en /ai/context:', error);
+    console.error('Error in /ai/context:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -123,7 +114,6 @@ router.get('/context/:businessId', async (req, res) => {
 
 /**
  * POST /api/ai/update-metrics
- * Actualizar métricas de un negocio (para mejorar contexto de IA)
  */
 router.post('/update-metrics', async (req, res) => {
   try {
@@ -132,7 +122,7 @@ router.post('/update-metrics', async (req, res) => {
     if (!businessId || !metrics) {
       return res.status(400).json({
         success: false,
-        error: 'businessId y metrics son requeridos',
+        error: 'businessId and metrics are required',
       });
     }
 
@@ -140,10 +130,10 @@ router.post('/update-metrics', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Métricas actualizadas correctamente',
+      message: 'Metrics updated successfully',
     });
   } catch (error) {
-    console.error('Error en /ai/update-metrics:', error);
+    console.error('Error in /ai/update-metrics:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -151,33 +141,50 @@ router.post('/update-metrics', async (req, res) => {
   }
 });
 
-// En el endpoint que genera recomendaciones de IA
-app.post('/api/ai/chat', async (req, res) => {
+/**
+ * POST /api/ai/chat - Chat con métricas crypto
+ * ✅ CORREGIDO: usar router.post en lugar de app.post
+ */
+router.post('/chat', async (req, res) => {
   try {
     const { businessId, question } = req.body;
     
-    // Obtener métricas incluyendo pagos crypto
-    const metrics = await db.getSalesMetricsForAI(businessId, 30);
+    if (!businessId || !question) {
+      return res.status(400).json({
+        success: false,
+        error: 'businessId and question are required',
+      });
+    }
+
+    // Get metrics including crypto payments
+    const metrics = await getSalesMetricsForAI(businessId, 30);
     
-    // Construir contexto para la IA
+    // Build context for AI (in English)
     const context = `
-      Datos del negocio:
+      Business Data:
       - ${metrics.summary}
-      - Pagos en crypto (USDC): ${metrics.crypto.salesCount} transacciones
-      - Ingresos crypto: $${metrics.crypto.revenue} USDC
-      - Porcentaje de ventas crypto: ${metrics.crypto.percentage}%
+      - Crypto payments (USDC): ${metrics.crypto.salesCount} transactions
+      - Crypto revenue: $${metrics.crypto.revenue} USDC
+      - Crypto sales percentage: ${metrics.crypto.percentage}%
       ${metrics.crypto.recentTransactions.length > 0 ? 
-        `- Últimas transacciones crypto: ${metrics.crypto.recentTransactions.map(t => 
+        `- Recent crypto transactions: ${metrics.crypto.recentTransactions.map(t => 
           `$${t.amount} (${t.date})`).join(', ')}` : ''}
     `;
     
-    // Llamar a Bedrock con el contexto
-    const response = await generateAIResponse(question, context);
+    // Call Bedrock with context
+    const result = await generateTicketRecommendation(businessId, question, context);
     
-    res.json({ response, metrics });
+    res.json({ 
+      success: true,
+      response: result.recommendation || result,
+      metrics 
+    });
   } catch (error) {
-    console.error('Error en AI chat:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error in AI chat:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 });
 
