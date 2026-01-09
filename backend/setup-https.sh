@@ -88,3 +88,4 @@ echo "📝 Nota: Este es un certificado autofirmado."
 echo "📝 Los navegadores mostrarán una advertencia la primera vez."
 echo "📝 Para producción, considera usar Let's Encrypt con un dominio real."
 
+
