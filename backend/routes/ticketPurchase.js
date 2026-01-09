@@ -295,7 +295,7 @@ async function verifyX402Payment(paymentHeader, expectedAmount) {
 // Verificar transacción en Base
 async function verifyBaseTransaction(txHash, expectedAmount) {
   try {
-    const baseRpc = process.env.BASE_RPC_URL || 'https://mainnet.base.org';
+    const baseRpc = process.env.BASE_RPC_URL;
     
     const response = await fetch(baseRpc, {
       method: 'POST',
