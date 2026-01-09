@@ -5,9 +5,9 @@ import { Aptos, AptosConfig, Network, Account, Ed25519PrivateKey } from '@aptos-
 const router = express.Router();
 
 // Configuración de Movement
-const CONTRACT_ADDRESS = process.env.CONTRACT_MODULE_ADDRESS || '0x0a10dde9540e854e79445a37ed6636086128cfc4d13638077e983a14a4398056';
-const MOVEMENT_RPC = process.env.MOVEMENT_RPC_URL || 'https://aptos.testnet.porto.movementlabs.xyz/v1';
-const MOVEMENT_INDEXER = process.env.MOVEMENT_INDEXER_URL || 'https://indexer.testnet.porto.movementnetwork.xyz/v1/graphql';
+const CONTRACT_ADDRESS = process.env.CONTRACT_MODULE_ADDRESS || '2339acd68a5b699c8bfefed62febcf497959ca55527227e980c56031b3bfced9'
+const MOVEMENT_RPC = process.env.MOVEMENT_RPC_URL || 'https://testnet.movementnetwork.xyz/v1'
+const MOVEMENT_INDEXER = process.env.MOVEMENT_INDEXER_URL || 'https://hasura.testnet.movementnetwork.xyz/v1/graphql'
 
 // Inicializar Aptos client para Movement
 const aptosConfig = new AptosConfig({
@@ -210,8 +210,8 @@ function createDynamicPaymentMiddleware() {
             description: `Ticket purchase for event ${eventAddress}`,
             // Información para el cliente x402
             paymentInstructions: {
-              chainId: 8453, // Base mainnet
-              token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC en Base
+              chainId: 84532,
+              token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC SEPOLIA
               recipient: process.env.PAYMENT_RECEIVER_ADDRESS,
               amount: Math.floor(price * 1_000_000).toString(), // USDC tiene 6 decimales
             }
@@ -261,7 +261,7 @@ async function verifyX402Payment(paymentHeader, expectedAmount) {
     const { txHash, chainId, amount, sender } = paymentData;
     
     // Verificar que es en la red correcta (Base)
-    if (chainId !== 8453 && chainId !== 84532) { // Base mainnet o testnet
+    if (chainId !== 84532) { // Base testnet
       return { valid: false, error: 'Invalid chain' };
     }
     
