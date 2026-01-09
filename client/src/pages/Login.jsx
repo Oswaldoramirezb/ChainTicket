@@ -46,11 +46,6 @@ const Login = () => {
 
   if (!ready) {
     return (
-<<<<<<< HEAD
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-[#FFD700] text-xl animate-pulse">Loading...</div>
-      </div>
-=======
         <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
             <AnimatedBackground />
 
@@ -171,7 +166,6 @@ const Login = () => {
             {/* Diagnostic Tool - Only in development */}
             {import.meta.env.DEV && <PrivyDiagnostic />}
         </div>
->>>>>>> 367df0b (fix: Improve Privy Google OAuth login support)
     );
   }
 
