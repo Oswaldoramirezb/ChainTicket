@@ -22,6 +22,16 @@ const VendorMenu = () => {
     // Match vendor by ID (handle both string and number IDs)
     const vendor = vendors.find(v => String(v.id) === String(vendorId));
     const vendorServices = services.filter(s => String(s.vendorId) === String(vendorId));
+    
+    console.log('🔍 VendorMenu Debug:', {
+        vendorId,
+        vendor,
+        allServices: services,
+        vendorServices,
+        servicesCount: services.length,
+        vendorServicesCount: vendorServices.length
+    });
+    
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const vendorType = vendor?.vendor_type || vendor?.vendorType;
     const usesCart = vendor?.uses_cart || vendor?.usesCart || false;
