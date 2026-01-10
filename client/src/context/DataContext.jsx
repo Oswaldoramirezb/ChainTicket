@@ -43,7 +43,7 @@ export const DataProvider = ({ children }) => {
         const formattedServices = data.services.map(s => {
           // Try to extract vendorId from multiple possible sources
           let extractedVendorId = s.vendor_id || s.vendorid || s.vendorId || null;
-          
+
           // Validate that vendorId is not just "1" or empty - those are likely old/broken records
           if (extractedVendorId === '1' || extractedVendorId === 1 || extractedVendorId === '') {
             extractedVendorId = null;
@@ -71,8 +71,8 @@ export const DataProvider = ({ children }) => {
             title: s.title,
             description: s.description,
             image: s.image,
-            avgTime: s.avgtime || s.avgTime,
-            totalStock: s.totalstock || s.totalStock,
+            avgTime: s.avg_time || s.avgtime || s.avgTime || 30,
+            totalStock: s.total_stock || s.totalstock || s.totalStock || 0,
             sold: s.sold || 0,
             price: parseFloat(s.price) || 0,
             isActive: s.isactive ?? s.isActive ?? true,
@@ -148,8 +148,8 @@ export const DataProvider = ({ children }) => {
             title: s.title,
             description: s.description,
             image: s.image,
-            avgTime: s.avgtime || s.avgTime,
-            totalStock: s.totalstock || s.totalStock,
+            avgTime: s.avg_time || s.avgtime || s.avgTime || 30,
+            totalStock: s.total_stock || s.totalstock || s.totalStock || 0,
             sold: s.sold || 0,
             price: parseFloat(s.price) || 0,
             isActive: s.isactive ?? s.isActive ?? true,

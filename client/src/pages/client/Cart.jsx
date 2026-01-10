@@ -16,8 +16,8 @@ const Cart = () => {
 
     // Calculate max wait time (based on longest service)
     const maxWaitTime = cart.length > 0
-        ? Math.max(...cart.map(item => item.service.avgTime))
-        : 0;
+    ? Math.max(...cart.map(item => item.service?.avgTime || item.service?.avg_time || 30))
+    : 0;
 
     return (
         <div className="pb-20 max-w-4xl mx-auto">
@@ -76,7 +76,7 @@ const Cart = () => {
                                         <h3 className="text-xl font-serif text-white mb-1">{item.service.title}</h3>
                                         <div className="flex items-center gap-2 text-[#FFD700] text-xs">
                                             <Clock className="w-3 h-3" />
-                                            <span>{item.service.avgTime} min</span>
+                                            <span>{item.service?.avgTime || 30} min</span>
                                         </div>
                                     </div>
 
