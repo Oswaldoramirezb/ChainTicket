@@ -11,24 +11,11 @@ createRoot(document.getElementById('root')).render(
       appearance: {
         theme: 'dark',
         accentColor: '#FFD700',
-        logo: '/logo.jpg',
-        landingHeader: 'Welcome to Chain Ticket',
-        loginMessage: 'Sign in with Privy to access your embedded wallet'
+        logo: '/logo.jpg'
       },
       embeddedWallets: {
-        createOnLogin: 'all-users', // Changed from 'users-without-wallets' to ensure Google users get wallets
-        requireUserPasswordOnCreate: false,
-        noPromptOnSignature: false
-      },
-      // Ensure Google OAuth works correctly
-      legal: {
-        termsAndConditionsUrl: 'https://chainticket.com/terms',
-        privacyPolicyUrl: 'https://chainticket.com/privacy'
-      },
-      // Support for email and Google
-      // Note: Movement Network not yet supported by Privy, using Base Sepolia as fallback
-      // Transactions to Movement will be handled via custom RPC in useMovement hook
-      supportedChains: [84532] // Base Sepolia testnet (also used in useX402Payment)
+        createOnLogin: 'all-users'
+      }
     }}
   >
     <App />
