@@ -286,7 +286,7 @@ export const DataProvider = ({ children }) => {
       });
       const data = await response.json();
       if (data.success) {
-        const newActiveState = data.service.isactive;
+        const newActiveState = data.service.isActive ?? data.service.isactive;
         setServices(prev => prev.map(s => s.id === id ? { ...s, isActive: newActiveState } : s));
         setMyServices(prev => prev.map(s => s.id === id ? { ...s, isActive: newActiveState } : s));
         return true;
