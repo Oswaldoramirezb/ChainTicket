@@ -294,9 +294,13 @@ async function verifyX402Payment(paymentHeader, expectedAmount) {
 
 // Verificar transacción en Base
 async function verifyBaseTransaction(txHash, expectedAmount) {
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('🧪 DEV MODE: Skipping transaction verification');
+    return true;
+  }
+
   try {
-    const baseRpc = process.env.BASE_RPC_URL;
-    
+    const baseRpc = process.env.BASE_RPC_URL || 'https://sepolia.base.org';
     const response = await fetch(baseRpc, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -307,22 +311,14 @@ async function verifyBaseTransaction(txHash, expectedAmount) {
         params: [txHash]
       })
     });
-    
     const result = await response.json();
     
-    // Verificar que la transacción fue exitosa
     if (result.result && result.result.status === '0x1') {
       return true;
     }
-    
     return false;
   } catch (error) {
     console.error('Base transaction verification error:', error);
-    // En desarrollo, permitir pasar
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('DEV MODE: Skipping transaction verification');
-      return true;
-    }
     return false;
   }
 }
