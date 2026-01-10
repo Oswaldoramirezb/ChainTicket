@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import aiRoutes from './routes/aiRoutes.js';
 import ticketPurchaseRoutes from './routes/ticketPurchase.js';
 import transactionRoutes from './routes/transactionRoutes.js';
+import serviceRecommendationAI from './services/serviceRecommendationAI.js';
 import * as db from './services/dynamoDBService.js';
 
 const app = express();
@@ -538,6 +539,35 @@ app.use('/api/transactions', transactionRoutes);
 // ============================================
 
 app.use('/api/ai', aiRoutes);
+
+// AI Service Recommendations
+app.post('/api/ai/service-recommendations', async (req, res) => {
+  try {
+    const { privyId, businessType, businessCategory, businessName } = req.body;
+    
+    // Get current services for context
+    let currentServices = [];
+    if (privyId) {
+      try {
+        currentServices = await db.getServicesByOwner(privyId);
+      } catch (error) {
+        console.log('Could not fetch current services:', error);
+      }
+    }
+    
+    const recommendations = await serviceRecommendationAI.generateServiceRecommendations({
+      businessType,
+      businessCategory,
+      businessName,
+      currentServices
+    });
+    
+    res.json(recommendations);
+  } catch (error) {
+    console.error('Error generating recommendations:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 app.post('/api/ai/recommendations', async (req, res) => {
   const { businessProfileData, question } = req.body;
