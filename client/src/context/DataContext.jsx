@@ -56,10 +56,16 @@ export const DataProvider = ({ children }) => {
   }, []);
 
   const fetchMyServices = useCallback(async () => {
-    if (!user?.privyId || isGuest) return;
+    if (!user?.privyId || isGuest) {
+      console.log('⚠️ fetchMyServices skipped:', { privyId: user?.privyId, isGuest });
+      return;
+    }
     try {
+      console.log('🔍 Fetching services for privyId:', user.privyId);
       const response = await fetch(`${API_URL}/api/services/owner/${user.privyId}`);
       const data = await response.json();
+      console.log('📦 Services response:', data);
+      
       if (data.services) {
         const formattedServices = data.services.map(s => ({
           id: s.id,
@@ -78,10 +84,14 @@ export const DataProvider = ({ children }) => {
             days: s.scheduledays || s.schedule?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
           }
         }));
+        console.log('✅ Formatted services:', formattedServices);
         setMyServices(formattedServices);
+      } else {
+        console.log('⚠️ No services found in response');
+        setMyServices([]);
       }
     } catch (error) {
-      console.error('Error fetching my services:', error);
+      console.error('❌ Error fetching my services:', error);
     }
   }, [user?.privyId, isGuest]);
 
@@ -210,20 +220,29 @@ export const DataProvider = ({ children }) => {
   // Service CRUD
   const addService = async (newService) => {
     try {
+      console.log('➕ Adding new service:', newService);
+      
       if (!user?.privyId) {
-        console.error('No user authenticated');
+        console.error('❌ No user authenticated');
         return null;
       }
 
       // Find vendor for this admin
+      console.log('🔍 Looking for vendor. User privyId:', user.privyId);
+      console.log('📋 Available vendors:', vendors);
+      
       let myVendor = vendors.find(v => v.owner_privy_id === user?.privyId || v.ownerPrivyId === user?.privyId);
       let vendorId = myVendor?.id;
       
+      console.log('🏢 Found vendor:', myVendor);
+      
       // If no vendor exists, create one automatically
       if (!vendorId) {
-        console.log('No vendor found, creating one automatically...');
+        console.log('⚠️ No vendor found, creating one automatically...');
         const vendorName = user.profile?.businessName || user.profile?.fullName || 'My Business';
         const vendorType = user.profile?.businessCategory || 'restaurant';
+        
+        console.log('📝 Creating vendor:', { vendorName, vendorType });
         
         const createVendorResponse = await fetch(`${API_URL}/api/vendors`, {
           method: 'POST',
@@ -240,21 +259,25 @@ export const DataProvider = ({ children }) => {
         });
         
         const vendorData = await createVendorResponse.json();
+        console.log('📦 Vendor creation response:', vendorData);
+        
         if (vendorData.success && vendorData.vendor) {
           vendorId = vendorData.vendor.id;
           // Refresh vendors list
           await fetchVendors();
           console.log('✅ Vendor created successfully:', vendorId);
         } else {
-          console.error('Failed to create vendor:', vendorData);
+          console.error('❌ Failed to create vendor:', vendorData);
           return null;
         }
       }
       
       if (!vendorId) {
-        console.error('Could not get or create vendor');
+        console.error('❌ Could not get or create vendor');
         return null;
       }
+      
+      console.log('📤 Creating service with vendorId:', vendorId);
       
       const response = await fetch(`${API_URL}/api/services`, {
         method: 'POST',
@@ -272,7 +295,10 @@ export const DataProvider = ({ children }) => {
           isActive: isGuest ? false : true
         })
       });
+      
       const data = await response.json();
+      console.log('📦 Service creation response:', data);
+      
       if (data.success && data.service) {
         // Format the service to match our frontend format
         const formattedService = {
@@ -293,17 +319,30 @@ export const DataProvider = ({ children }) => {
           }
         };
         
+        console.log('✅ Formatted service:', formattedService);
+        
         // Add to state immediately so it appears right away
-        setMyServices(prev => [...prev, formattedService]);
+        console.log('📌 Adding to myServices state');
+        setMyServices(prev => {
+          console.log('📌 Previous myServices:', prev);
+          const newState = [...prev, formattedService];
+          console.log('📌 New myServices:', newState);
+          return newState;
+        });
         setServices(prev => [...prev, formattedService]);
         
         // Also refresh from server to ensure consistency
+        console.log('🔄 Refreshing services from server...');
         await fetchMyServices();
         await fetchServices(true); // Refresh all services so clients see it
+        
+        console.log('✅ Service added successfully');
         return formattedService;
+      } else {
+        console.error('❌ Service creation failed:', data);
       }
     } catch (error) {
-      console.error('Error adding service:', error);
+      console.error('❌ Error adding service:', error);
     }
     return null;
   };
