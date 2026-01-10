@@ -235,8 +235,10 @@ export async function createService(serviceData) {
     sk: 'META',
     gsi1pk: 'SERVICES',
     gsi1sk: `SERVICE#${serviceId}`,
-    gsi2pk: vendorId ? `VENDOR#${vendorId}` : `OWNER#${ownerPrivyId}`,
+    gsi2pk: `OWNER#${ownerPrivyId}`, // ✅ Always use OWNER for GSI2 to find by owner
     gsi2sk: `SERVICE#${serviceId}`,
+    gsi3pk: vendorId ? `VENDOR#${vendorId}` : undefined, // ✅ Use GSI3 for vendor queries
+    gsi3sk: vendorId ? `SERVICE#${serviceId}` : undefined,
     id: serviceId,
     ownerPrivyId,
     vendorId,
