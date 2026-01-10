@@ -210,11 +210,21 @@ export const DataProvider = ({ children }) => {
   // Service CRUD
   const addService = async (newService) => {
     try {
+      // Find vendor for this admin
+      const myVendor = vendors.find(v => v.owner_privy_id === user?.privyId || v.ownerPrivyId === user?.privyId);
+      const vendorId = myVendor?.id;
+      
+      if (!vendorId) {
+        console.error('No vendor found for this admin');
+        return null;
+      }
+      
       const response = await fetch(`${API_URL}/api/services`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ownerPrivyId: user?.privyId,
+          vendorId: vendorId, // Add vendorId
           title: newService.title,
           description: newService.description,
           image: newService.image,
@@ -228,6 +238,7 @@ export const DataProvider = ({ children }) => {
       const data = await response.json();
       if (data.success) {
         await fetchMyServices();
+        await fetchServices(true); // Refresh all services so clients see it
         return data.service;
       }
     } catch (error) {
