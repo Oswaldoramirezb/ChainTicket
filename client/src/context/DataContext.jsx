@@ -191,7 +191,7 @@ export const DataProvider = ({ children }) => {
     const loadData = async () => {
       setLoading(true);
       await fetchVendors();
-      await fetchServices(false); // Show ALL services to clients, not just active ones
+      await fetchServices(true); // Only show ACTIVE services to clients
       await fetchQueueInfo();
       if (user?.privyId && !isGuest) {
         if (user.role === 'admin') {
