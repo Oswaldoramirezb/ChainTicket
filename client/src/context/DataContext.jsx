@@ -42,7 +42,7 @@ export const DataProvider = ({ children }) => {
         
         const formattedServices = data.services.map(s => {
           // Try to extract vendorId from multiple possible sources
-          let extractedVendorId = s.vendorid || s.vendorId || s.vendor_id || null;
+          let extractedVendorId = s.vendor_id || s.vendorid || s.vendorId || null;
           
           // Validate that vendorId is not just "1" or empty - those are likely old/broken records
           if (extractedVendorId === '1' || extractedVendorId === 1 || extractedVendorId === '') {
@@ -127,7 +127,7 @@ export const DataProvider = ({ children }) => {
       if (data.services) {
         const formattedServices = data.services.map(s => {
           // Extract vendorId same way as fetchServices
-          let extractedVendorId = s.vendorid || s.vendorId || s.vendor_id || null;
+          let extractedVendorId = s.vendor_id || s.vendorid || s.vendorId || null;
           
           // Validate that vendorId is not just "1" or empty
           if (extractedVendorId === '1' || extractedVendorId === 1 || extractedVendorId === '') {
