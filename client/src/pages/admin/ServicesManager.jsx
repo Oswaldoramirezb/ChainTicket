@@ -3,6 +3,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Check, X, Clock, Package, Trash2, Power, Calendar, AlertTriangle, Lock } from 'lucide-react';
+import AIServiceAssistant from '../../components/AIServiceAssistant';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
