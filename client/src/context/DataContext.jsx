@@ -34,24 +34,49 @@ export const DataProvider = ({ children }) => {
       console.log('📦 Services API response:', { activeOnly, servicesCount: data.services?.length || 0, data });
       
       if (data.services) {
-        const formattedServices = data.services.map(s => ({
-          id: s.id,
-          vendorId: s.vendorid || s.vendorId, // Handle both snake_case and camelCase
-          title: s.title,
-          description: s.description,
-          image: s.image,
-          avgTime: s.avgtime || s.avgTime,
-          totalStock: s.totalstock || s.totalStock,
-          sold: s.sold || 0,
-          price: parseFloat(s.price) || 0,
-          isActive: s.isactive ?? s.isActive ?? true,
-          schedule: {
-            openTime: s.scheduleopentime || s.schedule?.openTime || '09:00',
-            closeTime: s.scheduleclosetime || s.schedule?.closeTime || '18:00',
-            days: s.scheduledays || s.schedule?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+        // Debug: Log raw service structure from backend
+        if (data.services.length > 0) {
+          console.log('🔍 Raw service from backend (first one):', data.services[0]);
+          console.log('🔍 All keys in raw service:', Object.keys(data.services[0]));
+        }
+        
+        const formattedServices = data.services.map(s => {
+          const formatted = {
+            id: s.id,
+            vendorId: s.vendorid || s.vendorId || s.vendor_id || null, // Try multiple possible field names
+            title: s.title,
+            description: s.description,
+            image: s.image,
+            avgTime: s.avgtime || s.avgTime,
+            totalStock: s.totalstock || s.totalStock,
+            sold: s.sold || 0,
+            price: parseFloat(s.price) || 0,
+            isActive: s.isactive ?? s.isActive ?? true,
+            schedule: {
+              openTime: s.scheduleopentime || s.schedule?.openTime || '09:00',
+              closeTime: s.scheduleclosetime || s.schedule?.closeTime || '18:00',
+              days: s.scheduledays || s.schedule?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+            },
+            // Keep raw data for debugging
+            _raw: s
+          };
+          
+          // Debug first service
+          if (data.services.indexOf(s) === 0) {
+            console.log('🔍 Formatted service (first one):', formatted);
+            console.log('🔍 vendorId check:', {
+              vendorid: s.vendorid,
+              vendorId: s.vendorId,
+              vendor_id: s.vendor_id,
+              gsi2pk: s.gsi2pk,
+              gsi2sk: s.gsi2sk,
+              finalVendorId: formatted.vendorId
+            });
           }
-        }));
-        console.log('✅ Formatted services for clients:', formattedServices.length, formattedServices);
+          
+          return formatted;
+        });
+        console.log('✅ Formatted services for clients:', formattedServices.length, formattedServices.slice(0, 3));
         setServices(formattedServices);
       } else {
         console.warn('⚠️ No services in response:', data);
