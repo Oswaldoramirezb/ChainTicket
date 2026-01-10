@@ -156,7 +156,16 @@ app.post('/api/services', async (req, res) => {
   try {
     const { ownerPrivyId, vendorId, title, description, image, avgTime, totalStock, price, schedule, isActive } = req.body;
     const service = await db.createService({
-      ownerPrivyId, vendorId, title, description, image, avgTime, totalStock, price, schedule, isActive
+      ownerPrivyId, 
+      vendorId, 
+      title, 
+      description, 
+      image, 
+      avgTime, 
+      totalStock, 
+      price: price || 5,
+      schedule, 
+      isActive
     });
     res.json({ success: true, service: toSnakeCase(service) });
   } catch (error) {
@@ -164,6 +173,7 @@ app.post('/api/services', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 app.patch('/api/services/:id', async (req, res) => {
   try {
