@@ -125,24 +125,42 @@ export const DataProvider = ({ children }) => {
       console.log('📦 Services response:', data);
       
       if (data.services) {
-        const formattedServices = data.services.map(s => ({
-          id: s.id,
-          vendorId: s.vendorid || s.vendorId,
-          title: s.title,
-          description: s.description,
-          image: s.image,
-          avgTime: s.avgtime || s.avgTime,
-          totalStock: s.totalstock || s.totalStock,
-          sold: s.sold || 0,
-          price: parseFloat(s.price) || 0,
-          isActive: s.isactive ?? s.isActive ?? true,
-          schedule: {
-            openTime: s.scheduleopentime || s.schedule?.openTime || '09:00',
-            closeTime: s.scheduleclosetime || s.schedule?.closeTime || '18:00',
-            days: s.scheduledays || s.schedule?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+        const formattedServices = data.services.map(s => {
+          // Extract vendorId same way as fetchServices
+          let extractedVendorId = s.vendorid || s.vendorId || s.vendor_id || null;
+          
+          // Validate that vendorId is not just "1" or empty
+          if (extractedVendorId === '1' || extractedVendorId === 1 || extractedVendorId === '') {
+            extractedVendorId = null;
           }
-        }));
-        console.log('✅ Formatted services:', formattedServices);
+          
+          // Try to extract from gsi3pk if missing
+          if (!extractedVendorId && s.gsi3pk && typeof s.gsi3pk === 'string' && s.gsi3pk.startsWith('VENDOR#')) {
+            const extracted = s.gsi3pk.replace('VENDOR#', '').trim();
+            if (extracted && extracted !== '1' && extracted.length > 1) {
+              extractedVendorId = extracted;
+            }
+          }
+          
+          return {
+            id: s.id,
+            vendorId: extractedVendorId,
+            title: s.title,
+            description: s.description,
+            image: s.image,
+            avgTime: s.avgtime || s.avgTime,
+            totalStock: s.totalstock || s.totalStock,
+            sold: s.sold || 0,
+            price: parseFloat(s.price) || 0,
+            isActive: s.isactive ?? s.isActive ?? true,
+            schedule: {
+              openTime: s.scheduleopentime || s.schedule?.openTime || '09:00',
+              closeTime: s.scheduleclosetime || s.schedule?.closeTime || '18:00',
+              days: s.scheduledays || s.schedule?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+            }
+          };
+        });
+        console.log('✅ Formatted myServices:', formattedServices.length, formattedServices);
         setMyServices(formattedServices);
       } else {
         console.log('⚠️ No services found in response');
