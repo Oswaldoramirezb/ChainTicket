@@ -21,15 +21,44 @@ const VendorMenu = () => {
 
     // Match vendor by ID (handle both string and number IDs)
     const vendor = vendors.find(v => String(v.id) === String(vendorId));
-    const vendorServices = services.filter(s => String(s.vendorId) === String(vendorId));
+    
+    // Debug: Check what vendorId values services have
+    const servicesVendorIds = services.map(s => ({ 
+        id: s.id, 
+        title: s.title, 
+        vendorId: s.vendorId,
+        vendorIdType: typeof s.vendorId,
+        vendorIdString: String(s.vendorId)
+    }));
     
     console.log('🔍 VendorMenu Debug:', {
         vendorId,
-        vendor,
-        allServices: services,
-        vendorServices,
+        vendorIdType: typeof vendorId,
+        vendorIdString: String(vendorId),
+        vendor: vendor ? {
+            id: vendor.id,
+            idType: typeof vendor.id,
+            name: vendor.name,
+            vendorId: vendor.vendorId,
+            vendorid: vendor.vendorid
+        } : null,
+        servicesVendorIds: servicesVendorIds.slice(0, 5), // Show first 5 for debugging
         servicesCount: services.length,
-        vendorServicesCount: vendorServices.length
+        allServices: services
+    });
+    
+    // Try multiple ways to match vendorId
+    const vendorServices = services.filter(s => {
+        const serviceVendorId = s.vendorId || s.vendorid;
+        const match1 = String(serviceVendorId) === String(vendorId);
+        const match2 = String(serviceVendorId) === String(vendor?.id);
+        const match3 = String(serviceVendorId) === String(vendor?.vendorId);
+        return match1 || match2 || match3;
+    });
+    
+    console.log('✅ Filtered vendorServices:', {
+        count: vendorServices.length,
+        services: vendorServices.map(s => ({ id: s.id, title: s.title, vendorId: s.vendorId }))
     });
     
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
