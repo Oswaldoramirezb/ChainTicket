@@ -1,5 +1,7 @@
-import { verifyTypedData, createPublicClient, http } from 'viem';
+// backend/routes/ticketPurchase.js
+import { verifyTypedData, createPublicClient, createWalletClient, http, parseAbi } from 'viem';
 import { baseSepolia } from 'viem/chains';
+import { privateKeyToAccount } from 'viem/accounts';
 
 import express from 'express';
 import crypto from 'crypto';
@@ -12,6 +14,9 @@ const CONTRACT_ADDRESS = process.env.CONTRACT_MODULE_ADDRESS || '2339acd68a5b699
 const MOVEMENT_RPC = process.env.MOVEMENT_RPC_URL || 'https://testnet.movementnetwork.xyz/v1'
 const MOVEMENT_INDEXER = process.env.MOVEMENT_INDEXER_URL || 'https://hasura.testnet.movementnetwork.xyz/v1/graphql'
 
+// USDC en Base Sepolia
+const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+
 // Inicializar Aptos client para Movement
 const aptosConfig = new AptosConfig({
   network: Network.CUSTOM,
@@ -20,18 +25,81 @@ const aptosConfig = new AptosConfig({
 });
 const aptos = new Aptos(aptosConfig);
 
-// Cliente para Base Sepolia
+// Cliente para Base Sepolia (lectura)
 const baseClient = createPublicClient({
   chain: baseSepolia,
   transport: http(process.env.BASE_RPC_URL || 'https://sepolia.base.org')
 });
 
 // ============================================
+// FUNCIÓN: Ejecutar transferWithAuthorization en Base
+// ============================================
+async function executeTransferWithAuthorization(authData) {
+  const { from, to, value, validAfter, validBefore, nonce, signature } = authData;
+  
+  // Wallet del relayer que paga el gas (necesita ETH en Base Sepolia)
+  const relayerPrivateKey = process.env.BASE_RELAYER_PRIVATE_KEY;
+  if (!relayerPrivateKey) {
+    throw new Error('BASE_RELAYER_PRIVATE_KEY not configured');
+  }
+  
+  const account = privateKeyToAccount(relayerPrivateKey);
+  
+  const walletClient = createWalletClient({
+    account,
+    chain: baseSepolia,
+    transport: http(process.env.BASE_RPC_URL || 'https://sepolia.base.org'),
+  });
+
+  // Separar firma en v, r, s
+  const r = signature.slice(0, 66);
+  const s = '0x' + signature.slice(66, 130);
+  const v = parseInt(signature.slice(130, 132), 16);
+
+  const abi = parseAbi([
+    'function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, uint8 v, bytes32 r, bytes32 s)'
+  ]);
+
+  console.log('💸 Executing transferWithAuthorization...');
+  console.log('   From:', from);
+  console.log('   To:', to);
+  console.log('   Value:', value);
+
+  const txHash = await walletClient.writeContract({
+    address: USDC_ADDRESS,
+    abi,
+    functionName: 'transferWithAuthorization',
+    args: [
+      from,
+      to,
+      BigInt(value),
+      BigInt(validAfter),
+      BigInt(validBefore),
+      nonce,
+      v,
+      r,
+      s
+    ],
+  });
+
+  console.log('⏳ Waiting for confirmation... TxHash:', txHash);
+
+  // Esperar confirmación
+  const receipt = await baseClient.waitForTransactionReceipt({ hash: txHash });
+  
+  if (receipt.status !== 'success') {
+    throw new Error('USDC transfer failed on-chain');
+  }
+
+  console.log('✅ USDC transferred successfully!');
+  return txHash;
+}
+
+// ============================================
 // FUNCIÓN: Obtener precio del evento desde el indexer
 // ============================================
 async function getEventPrice(eventAddress) {
   try {
-    // Query GraphQL al indexer de Movement
     const query = `
       query GetEventData {
         current_objects(
@@ -51,17 +119,14 @@ async function getEventPrice(eventAddress) {
     
     const result = await response.json();
     
-    // Si no encontramos en indexer, intentar view function directamente
     if (!result.data?.current_objects?.length) {
       return await getEventPriceFromContract(eventAddress);
     }
     
-    // Obtener precio usando view function del contrato
     return await getEventPriceFromContract(eventAddress);
     
   } catch (error) {
     console.error('Error fetching event price from indexer:', error);
-    // Fallback: precio por defecto o desde contrato
     return await getEventPriceFromContract(eventAddress);
   }
 }
@@ -77,14 +142,12 @@ async function getEventPriceFromContract(eventAddress) {
       }
     });
     
-    // El precio viene en la unidad más pequeña, convertir a USD
     const priceInSmallestUnit = Number(result[0]);
-    const priceInUSD = priceInSmallestUnit / 1_000_000; // Ajustar según decimales
+    const priceInUSD = priceInSmallestUnit / 1_000_000;
     
     return priceInUSD;
   } catch (error) {
     console.error('Error getting price from contract:', error);
-    // Precio por defecto si falla
     return 5.00;
   }
 }
@@ -102,8 +165,6 @@ async function getEventInfo(eventAddress) {
       }
     });
     
-    // Retorna: name, admin_registry, total_tickets, tickets_sold, ticket_price, 
-    // is_active, is_cancelled, transferable, resalable, permanent, refundable, payment_processor
     return {
       name: result[0],
       adminRegistry: result[1],
@@ -129,7 +190,6 @@ async function getEventInfo(eventAddress) {
 // ============================================
 async function mintTicketOnChain(eventAddress, buyerAddress, paymentTxHash) {
   try {
-    // ⭐ Convertir dirección EVM a formato Movement (64 chars)
     let formattedBuyer = buyerAddress;
     if (buyerAddress.startsWith('0x')) {
       const addressWithout0x = buyerAddress.slice(2);
@@ -147,7 +207,6 @@ async function mintTicketOnChain(eventAddress, buyerAddress, paymentTxHash) {
     const privateKey = new Ed25519PrivateKey(privateKeyHex);
     const paymentProcessor = Account.fromPrivateKey({ privateKey });
     
-    // Generar QR hash - usar formattedBuyer ⭐
     const qrHash = crypto.createHash('sha256')
       .update(`${eventAddress}-${formattedBuyer}-${paymentTxHash}-${Date.now()}`)
       .digest();
@@ -207,33 +266,29 @@ function createDynamicPaymentMiddleware() {
     const paymentHeader = req.headers['x-payment'];
     
     try {
-      // Obtener precio del evento
       const price = await getEventPrice(eventAddress);
       
-      // Si no hay header de pago, retornar 402 con instrucciones
       if (!paymentHeader) {
         return res.status(402).json({
           error: 'Payment Required',
           paymentDetails: {
             scheme: 'x402',
-            network: 'base', // Pagos en Base (USDC)
+            network: 'base-sepolia',
             receiver: process.env.PAYMENT_RECEIVER_ADDRESS,
             amount: price.toString(),
             currency: 'USDC',
             eventAddress,
             description: `Ticket purchase for event ${eventAddress}`,
-            // Información para el cliente x402
             paymentInstructions: {
               chainId: 84532,
-              token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC SEPOLIA
+              token: USDC_ADDRESS,
               recipient: process.env.PAYMENT_RECEIVER_ADDRESS,
-              amount: Math.floor(price * 1_000_000).toString(), // USDC tiene 6 decimales
+              amount: Math.floor(price * 1_000_000).toString(),
             }
           }
         });
       }
       
-      // Verificar el pago
       const paymentValid = await verifyX402Payment(paymentHeader, price);
       
       if (!paymentValid.valid) {
@@ -249,7 +304,6 @@ function createDynamicPaymentMiddleware() {
         });
       }
       
-      // Guardar info del pago verificado en request
       req.paymentInfo = paymentValid;
       next();
       
@@ -267,19 +321,19 @@ function createDynamicPaymentMiddleware() {
 // FUNCIÓN: Verificar pago x402
 // ============================================
 async function verifyX402Payment(paymentHeader, expectedAmount) {
-  // En desarrollo, siempre aprobar
+  // En desarrollo, siempre aprobar (pero aún parsear el header)
   if (process.env.NODE_ENV === 'development') {
-    console.warn('🧪 DEV MODE: Skipping payment verification');
+    console.warn('🧪 DEV MODE: Skipping real USDC transfer');
     try {
       const paymentData = JSON.parse(Buffer.from(paymentHeader, 'base64').toString());
       return { 
         valid: true, 
-        txHash: paymentData.txHash || 'dev-mode',
+        txHash: paymentData.txHash || `dev-${Date.now()}`,
         amount: expectedAmount,
         sender: paymentData.from || paymentData.sender || 'dev-user'
       };
     } catch {
-      return { valid: true, txHash: 'dev-mode', amount: expectedAmount, sender: 'dev-user' };
+      return { valid: true, txHash: `dev-${Date.now()}`, amount: expectedAmount, sender: 'dev-user' };
     }
   }
 
@@ -288,9 +342,14 @@ async function verifyX402Payment(paymentHeader, expectedAmount) {
     const authData = JSON.parse(Buffer.from(paymentHeader, 'base64').toString());
     const { from, to, value, validAfter, validBefore, nonce, signature, chainId } = authData;
     
+    console.log('🔍 Verifying x402 payment...');
+    console.log('   From:', from);
+    console.log('   To:', to);
+    console.log('   Value:', value);
+    
     // Verificar chain
     if (chainId !== 84532) {
-      return { valid: false, error: 'Invalid chain ID' };
+      return { valid: false, error: 'Invalid chain ID. Expected Base Sepolia (84532)' };
     }
     
     // Verificar que no haya expirado
@@ -302,7 +361,7 @@ async function verifyX402Payment(paymentHeader, expectedAmount) {
     // Verificar monto
     const expectedValueWei = BigInt(Math.floor(expectedAmount * 1000000));
     if (BigInt(value) < expectedValueWei) {
-      return { valid: false, error: 'Insufficient amount' };
+      return { valid: false, error: `Insufficient amount. Expected ${expectedValueWei}, got ${value}` };
     }
     
     // Verificar destinatario
@@ -317,7 +376,7 @@ async function verifyX402Payment(paymentHeader, expectedAmount) {
         name: 'USD Coin',
         version: '2',
         chainId: 84532,
-        verifyingContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+        verifyingContract: USDC_ADDRESS
       },
       types: {
         TransferWithAuthorization: [
@@ -345,50 +404,21 @@ async function verifyX402Payment(paymentHeader, expectedAmount) {
       return { valid: false, error: 'Invalid signature' };
     }
     
-    // TODO: Ejecutar transferWithAuthorization en Base
-    // Por ahora retornamos válido si la firma es correcta
+    console.log('✅ Signature valid! Executing transfer...');
+    
+    // ✅ EJECUTAR LA TRANSFERENCIA REAL DE USDC
+    const txHash = await executeTransferWithAuthorization(authData);
     
     return {
       valid: true,
-      txHash: `pending-${Date.now()}`,
+      txHash,
       amount: expectedAmount,
       sender: from
     };
     
   } catch (error) {
     console.error('Payment verification error:', error);
-    return { valid: false, error: 'Invalid payment format' };
-  }
-}
-
-// Verificar transacción en Base
-async function verifyBaseTransaction(txHash, expectedAmount) {
-  if (process.env.NODE_ENV === 'development') {
-    console.warn('🧪 DEV MODE: Skipping transaction verification');
-    return true;
-  }
-
-  try {
-    const baseRpc = process.env.BASE_RPC_URL || 'https://sepolia.base.org';
-    const response = await fetch(baseRpc, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [txHash]
-      })
-    });
-    const result = await response.json();
-    
-    if (result.result && result.result.status === '0x1') {
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Base transaction verification error:', error);
-    return false;
+    return { valid: false, error: error.message || 'Invalid payment format' };
   }
 }
 
@@ -396,7 +426,7 @@ async function verifyBaseTransaction(txHash, expectedAmount) {
 // RUTAS
 // ============================================
 
-// GET /api/tickets/price/:eventAddress - Obtener precio de un evento
+// GET /api/tickets/price/:eventAddress
 router.get('/price/:eventAddress', async (req, res) => {
   const { eventAddress } = req.params;
   
@@ -420,7 +450,7 @@ router.get('/price/:eventAddress', async (req, res) => {
   }
 });
 
-// GET /api/tickets/event/:eventAddress - Info completa del evento
+// GET /api/tickets/event/:eventAddress
 router.get('/event/:eventAddress', async (req, res) => {
   const { eventAddress } = req.params;
   
@@ -451,12 +481,15 @@ router.post(
     }
     
     try {
-      // Mint del ticket on-chain
+      console.log('🎟️ Minting ticket for:', buyerAddress);
+      
       const mintResult = await mintTicketOnChain(
         eventAddress,
         buyerAddress,
         req.paymentInfo.txHash
       );
+      
+      console.log('🎉 Ticket minted successfully!', mintResult.ticketAddress);
       
       return res.status(200).json({
         success: true,
@@ -470,7 +503,7 @@ router.post(
         payment: {
           txHash: req.paymentInfo.txHash,
           amount: req.paymentInfo.amount,
-          network: 'base'
+          network: 'base-sepolia'
         },
         movementTx: {
           hash: mintResult.txHash
@@ -488,7 +521,7 @@ router.post(
   }
 );
 
-// POST /api/tickets/purchase-free/:eventAddress - Comprar ticket gratis
+// POST /api/tickets/purchase-free/:eventAddress
 router.post('/purchase-free/:eventAddress', async (req, res) => {
   const { eventAddress } = req.params;
   const { buyerAddress } = req.body;
@@ -498,7 +531,6 @@ router.post('/purchase-free/:eventAddress', async (req, res) => {
   }
   
   try {
-    // Verificar que el evento es gratuito
     const eventInfo = await getEventInfo(eventAddress);
     if (eventInfo.ticketPrice > 0) {
       return res.status(402).json({
