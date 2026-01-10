@@ -26,9 +26,9 @@ createRoot(document.getElementById('root')).render(
         privacyPolicyUrl: 'https://chainticket.com/privacy'
       },
       // Support for email and Google
-      supportedChains: [
-        // Movement Network will be added here when available in Privy
-      ]
+      // Note: Movement Network not yet supported by Privy, using Base Sepolia as fallback
+      // Transactions to Movement will be handled via custom RPC in useMovement hook
+      supportedChains: [84532] // Base Sepolia testnet (also used in useX402Payment)
     }}
   >
     <App />
