@@ -41,9 +41,22 @@ export const DataProvider = ({ children }) => {
         }
         
         const formattedServices = data.services.map(s => {
+          // Try to extract vendorId from multiple possible sources
+          let extractedVendorId = s.vendorid || s.vendorId || s.vendor_id || null;
+          
+          // If vendorId is missing, try to extract from gsi3pk (format: VENDOR#ID)
+          if (!extractedVendorId && s.gsi3pk && s.gsi3pk.startsWith('VENDOR#')) {
+            extractedVendorId = s.gsi3pk.replace('VENDOR#', '');
+          }
+          
+          // Also try gsi2pk as fallback (though this should be OWNER#)
+          if (!extractedVendorId && s.gsi2pk && s.gsi2pk.startsWith('VENDOR#')) {
+            extractedVendorId = s.gsi2pk.replace('VENDOR#', '');
+          }
+          
           const formatted = {
             id: s.id,
-            vendorId: s.vendorid || s.vendorId || s.vendor_id || null, // Try multiple possible field names
+            vendorId: extractedVendorId,
             title: s.title,
             description: s.description,
             image: s.image,
@@ -56,20 +69,21 @@ export const DataProvider = ({ children }) => {
               openTime: s.scheduleopentime || s.schedule?.openTime || '09:00',
               closeTime: s.scheduleclosetime || s.schedule?.closeTime || '18:00',
               days: s.scheduledays || s.schedule?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
-            },
-            // Keep raw data for debugging
-            _raw: s
+            }
           };
           
           // Debug first service
           if (data.services.indexOf(s) === 0) {
             console.log('🔍 Formatted service (first one):', formatted);
-            console.log('🔍 vendorId check:', {
+            console.log('🔍 vendorId extraction check:', {
               vendorid: s.vendorid,
               vendorId: s.vendorId,
               vendor_id: s.vendor_id,
               gsi2pk: s.gsi2pk,
               gsi2sk: s.gsi2sk,
+              gsi3pk: s.gsi3pk,
+              gsi3sk: s.gsi3sk,
+              extractedVendorId: extractedVendorId,
               finalVendorId: formatted.vendorId
             });
           }
